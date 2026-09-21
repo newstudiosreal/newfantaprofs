@@ -1,0 +1,285 @@
+import type { CatalogEvent } from "./types";
+
+/** Cataloghi di default delle leghe (gli stessi inseriti dal database alla creazione di una lega). */
+export const DEFAULT_BONUS: CatalogEvent[] = [
+ {
+  "id": "assenza",
+  "label": "È assente",
+  "pts": 15
+ },
+ {
+  "id": "ritardo",
+  "label": "Arriva in ritardo",
+  "pts": 10
+ },
+ {
+  "id": "fine_prima",
+  "label": "Fa finire la lezione prima",
+  "pts": 10
+ },
+ {
+  "id": "no_lezione_5m",
+  "label": "Non inizia la lezione per 5 min",
+  "pts": 10
+ },
+ {
+  "id": "video",
+  "label": "Fa vedere un video",
+  "pts": 15
+ },
+ {
+  "id": "sostituto",
+  "label": "Viene sostituito da un collega",
+  "pts": 20
+ },
+ {
+  "id": "parla_collega",
+  "label": "Esce per parlare con un collega",
+  "pts": 15
+ },
+ {
+  "id": "lavagna",
+  "label": "Scrive alla lavagna",
+  "pts": 5
+ },
+ {
+  "id": "complimento",
+  "label": "Fa un complimento alla classe",
+  "pts": 10
+ },
+ {
+  "id": "lavoretti",
+  "label": "Fa fare attività in gruppo",
+  "pts": 10
+ },
+ {
+  "id": "interr_prog",
+  "label": "Interrogazione programmata",
+  "pts": 8
+ },
+ {
+  "id": "correzione",
+  "label": "Restituisce compiti in 3 giorni",
+  "pts": 15
+ },
+ {
+  "id": "liberi",
+  "label": "Ci lascia liberi in classe",
+  "pts": 25
+ },
+ {
+  "id": "ricreazione",
+  "label": "Allunga la ricreazione",
+  "pts": 20
+ },
+ {
+  "id": "interroga_sbagliato",
+  "label": "Interroga e poi dice \"ah no lascia stare\"",
+  "pts": 20
+ },
+ {
+  "id": "telefono",
+  "label": "Usa il telefono durante la lezione",
+  "pts": 15
+ },
+ {
+  "id": "sbaglia_data",
+  "label": "Sbaglia la data sulla lavagna",
+  "pts": 10
+ },
+ {
+  "id": "doppio_appello",
+  "label": "Fa l'appello due volte",
+  "pts": 10
+ },
+ {
+  "id": "storia_personale",
+  "label": "Racconta un aneddoto personale",
+  "pts": 20
+ },
+ {
+  "id": "lezione_diversa",
+  "label": "Fa lezione su un argomento a caso",
+  "pts": 25
+ },
+ {
+  "id": "canta",
+  "label": "Canta o canticchia",
+  "pts": 35
+ },
+ {
+  "id": "film_completo",
+  "label": "Fa vedere un film intero",
+  "pts": 30
+ },
+ {
+  "id": "monocromatico",
+  "label": "Vestito monocromatico",
+  "pts": 25
+ },
+ {
+  "id": "capelli",
+  "label": "Capelli appena tagliati",
+  "pts": 40
+ },
+ {
+  "id": "profumo",
+  "label": "Si sente il profumo",
+  "pts": 15
+ },
+ {
+  "id": "gita",
+  "label": "Organizza una gita",
+  "pts": 100
+ },
+ {
+  "id": "lim",
+  "label": "Cambia sfondo alla LIM",
+  "pts": 150
+ },
+ {
+  "id": "parolaccia",
+  "label": "Dice una parolaccia",
+  "pts": 40
+ },
+ {
+  "id": "cibo",
+  "label": "Porta qualcosa da mangiare",
+  "pts": 80
+ }
+];
+export const DEFAULT_MALUS: CatalogEvent[] = [
+ {
+  "id": "interrogazione",
+  "label": "Interrogazione a sorpresa",
+  "pts": -35
+ },
+ {
+  "id": "verifica_sorpresa",
+  "label": "Dà una verifica non annunciata",
+  "pts": -50
+ },
+ {
+  "id": "compito",
+  "label": "Assegna compiti per il giorno dopo",
+  "pts": -25
+ },
+ {
+  "id": "verifiche",
+  "label": "Dimentica i compiti corretti",
+  "pts": -40
+ },
+ {
+  "id": "ritardo_voto",
+  "label": "Mette il voto dopo 2 settimane",
+  "pts": -15
+ },
+ {
+  "id": "interroga_tutti",
+  "label": "Interroga tutta la classe",
+  "pts": -45
+ },
+ {
+  "id": "bagno",
+  "label": "Non manda in bagno",
+  "pts": -20
+ },
+ {
+  "id": "nota",
+  "label": "Mette una nota",
+  "pts": -25
+ },
+ {
+  "id": "nome",
+  "label": "Sbaglia il nome di uno studente",
+  "pts": -10
+ },
+ {
+  "id": "litigio",
+  "label": "Litiga con uno studente",
+  "pts": -30
+ },
+ {
+  "id": "battuta",
+  "label": "Fa una battuta imbarazzante",
+  "pts": -15
+ },
+ {
+  "id": "cambia_posto",
+  "label": "Cambia i posti in classe",
+  "pts": -20
+ },
+ {
+  "id": "spegne_lim",
+  "label": "Spegne la LIM a metà lezione",
+  "pts": -15
+ },
+ {
+  "id": "ritira_cell",
+  "label": "Ritira i cellulari",
+  "pts": -10
+ },
+ {
+  "id": "sequestra_cell",
+  "label": "Sequestra il cellulare e va in segreteria",
+  "pts": -35
+ },
+ {
+  "id": "finestra",
+  "label": "Apre la finestra d'inverno",
+  "pts": -10
+ },
+ {
+  "id": "rimanda",
+  "label": "Rimanda qualcuno",
+  "pts": -60
+ },
+ {
+  "id": "chiama_genitori",
+  "label": "Chiama i genitori",
+  "pts": -50
+ },
+ {
+  "id": "preside",
+  "label": "Manda dal preside",
+  "pts": -70
+ }
+];
+export const DEFAULT_PREMI: CatalogEvent[] = [
+ {
+  "id": "lezione_spassosa",
+  "label": "🎭 Lezione Spassosa",
+  "pts": 50,
+  "maxPerWeek": 2
+ },
+ {
+  "id": "vestito_bello",
+  "label": "👗 Vestito più Bello della Sett.",
+  "pts": 30,
+  "maxPerWeek": 1
+ },
+ {
+  "id": "insuff_secchione",
+  "label": "😈 Insufficienza al Secchione",
+  "pts": 5,
+  "maxPerWeek": null
+ },
+ {
+  "id": "otto_stupido",
+  "label": "🤡 8 allo Studente Impreparato",
+  "pts": 8,
+  "maxPerWeek": null
+ },
+ {
+  "id": "mood_off",
+  "label": "😴 Giornata No — Lezione Vuota",
+  "pts": 20,
+  "maxPerWeek": 1
+ },
+ {
+  "id": "tutto_bene",
+  "label": "✨ Lezione Perfetta",
+  "pts": -15,
+  "maxPerWeek": 1
+ }
+];
