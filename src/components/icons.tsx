@@ -7,3 +7,12 @@ export const IconUser = (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><c
 export const IconBook = (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2V5z" /><path d="M19 19v2H6" /></svg>;
 export const IconSun = (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>;
 export const IconMoon = (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z" /></svg>;
+export const IconShield = (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" /><path d="M9 12l2 2 4-4" /></svg>;
+
+/** Solo il segno di spunta: nessun cerchio/badge bianco dietro, come richiesto. */
+export const IconVerified = (p: SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" width="16" height="16" aria-label="Account verificato" role="img" {...p}>
+    <circle cx="12" cy="12" r="10" fill="#4d8dff" />
+    <path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
