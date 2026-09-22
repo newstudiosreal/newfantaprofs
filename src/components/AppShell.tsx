@@ -2,7 +2,7 @@ import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { Avatar, Button } from './ui';
-import { IconBook, IconHome, IconMoon, IconNews, IconSun, IconTrophy, IconUser } from './icons';
+import { IconBook, IconHome, IconMoon, IconNews, IconShield, IconSun, IconTrophy, IconUser } from './icons';
 
 const NAV = [
   { to: '/', label: 'Home', Icon: IconHome, end: true },
@@ -48,6 +48,7 @@ export function AppShell() {
             <NavLink key={n.to} to={n.to} end={n.end} className={cls}><n.Icon />{n.label === 'Hall of Fame' ? 'Hall' : n.label}</NavLink>
           ))}
           <NavLink to="/profilo" className={cls}><IconUser />Profilo</NavLink>
+          {profile?.is_superadmin && <NavLink to="/admin" className={cls}><IconShield />Super admin</NavLink>}
         </nav>
       )}
     </>
