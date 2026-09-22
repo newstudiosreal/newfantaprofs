@@ -192,6 +192,8 @@ export const adminCreateCode = (type: string, meta: Record<string, string>) => r
 export const adminSetBan = (userId: string, until: string | null) => rpc('admin_set_ban', { p_user: userId, p_until: until });
 export const adminSetLeagueSuspended = (leagueId: string, suspended: boolean) =>
   rpc('admin_set_league_suspended', { p_league: leagueId, p_suspended: suspended });
+export const adminSetVerified = (userId: string, verified: boolean) =>
+  rpc('admin_set_verified', { p_user: userId, p_verified: verified });
 export const adminResetHof = () => rpc('admin_reset_hof');
 export const adminListProfiles = () => rows<Profile>(supabase.from('profiles').select('*').order('created_at', { ascending: false }));
 export const adminListTrades = () =>
