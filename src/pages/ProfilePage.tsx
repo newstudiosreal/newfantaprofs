@@ -65,7 +65,7 @@ function OwnProfile({ profile }: { profile: Profile }) {
     <>
       <div className="card">
         <div className="row"><Avatar profile={profile} large />
-          <div className="grow"><h2 style={{ fontSize: '2.2rem' }}>{profile.username} <VerifiedMark profile={profile} /></h2>
+          <div className="grow"><h2 style={{ fontSize: '2.2rem' }}><span className="profile-name">{profile.username}<VerifiedMark profile={profile} /></span></h2>
             <p className="muted small" style={{ margin: 0 }}>Iscritto dal {fmtDate(profile.created_at)}{profile.is_superadmin ? ' · SuperAdmin' : ''}</p></div></div>
         <Badges userId={profile.id} />
       </div>
@@ -125,7 +125,7 @@ export function ProfilePage() {
       {!isOwn && other.data && (
         <div className="card">
           <div className="row"><Avatar profile={other.data} large />
-            <div><h2 style={{ fontSize: '2.2rem' }}>{other.data.username} <VerifiedMark profile={other.data} /></h2><p className="muted small" style={{ margin: 0 }}>Iscritto dal {fmtDate(other.data.created_at)}</p></div></div>
+            <div><h2 style={{ fontSize: '2.2rem' }}><span className="profile-name">{other.data.username}<VerifiedMark profile={other.data} /></span></h2><p className="muted small" style={{ margin: 0 }}>Iscritto dal {fmtDate(other.data.created_at)}</p></div></div>
           {other.data.bio && <p style={{ marginTop: 12 }}>{other.data.bio}</p>}
           <Badges userId={other.data.id} />
         </div>
