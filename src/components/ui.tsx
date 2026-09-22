@@ -4,6 +4,7 @@ import { fmtPts } from '@/lib/format';
 import { useToast } from '@/hooks/useToast';
 import type { Profile } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
+import { IconVerified } from './icons';
 
 export function Button({ variant = 'default', size, block, className = '', ...p }:
   ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'default' | 'primary' | 'danger' | 'ghost'; size?: 'sm' | 'lg'; block?: boolean }) {
@@ -101,6 +102,19 @@ export function Avatar({ profile, large }: { profile?: Pick<Profile, 'avatar' | 
       {src ? <img src={src} alt="" loading="lazy" /> : (profile?.avatar || (profile?.username?.[0]?.toUpperCase() ?? '?'))}
     </span>
   );
+}
+
+/** Spunta blu di verifica: solo il segno, niente badge/cerchio bianco dietro. */
+export function VerifiedMark({ profile, className = '' }: { profile?: Pick<Profile, 'verified'> | null; className?: string }) {
+  if (!profile?.verified) return null;
+  return <IconVerified className={`verified-mark ${className}`} />;
+}
+
+/** Nome utente con la spunta di verifica inline, pronto per essere riusato ovunque compare uno username. */
+export function UserName({ profile, bold = true }: { profile?: Pick<Profile, 'username' | 'verified'> | null; bold?: boolean }) {
+  if (!profile) return <span>?</span>;
+  const name = bold ? <b>{profile.username}</b> : <span>{profile.username}</span>;
+  return <span className="row" style={{ gap: 4, display: 'inline-flex' }}>{name}<VerifiedMark profile={profile} /></span>;
 }
 
 export function TeamName({ name, fx }: { name: string; fx?: string | null }) {
