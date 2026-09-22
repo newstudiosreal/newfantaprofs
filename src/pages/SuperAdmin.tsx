@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { ActionButton, Button, ConfirmModal, Empty, ErrorState, Field, Loading, Select } from '@/components/ui';
+import { ActionButton, Button, ConfirmModal, Empty, ErrorState, Field, Loading, Select, VerifiedMark } from '@/components/ui';
 import { useAsync } from '@/hooks/useAsync';
 import { useToast } from '@/hooks/useToast';
 import {
-  adminCreateCode, adminListCodes, adminListProfiles, adminResetHof, adminSetBan, adminSetLeagueSuspended, deleteAnnouncement,
-  deleteLeague, getSetting, listAnnouncements, listMyLeagues, saveAnnouncement, setAppMode,
+  adminCreateCode, adminListCodes, adminListProfiles, adminResetHof, adminSetBan, adminSetLeagueSuspended, adminSetVerified,
+  deleteAnnouncement, deleteLeague, getSetting, listAnnouncements, listMyLeagues, saveAnnouncement, setAppMode,
 } from '@/lib/api';
 import { fmtDate } from '@/lib/format';
 import { BADGES, NAME_FX, SKINS } from '@/lib/premium';
@@ -29,13 +29,17 @@ function Users() {
           const banned = !!u.banned_until && new Date(u.banned_until) > new Date();
           return (
             <div key={u.id} className="row between row-wrap" style={{ padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
-              <span><b>{u.username}</b> {u.is_superadmin && <span className="badge badge-accent">SA</span>} {banned && <span className="badge badge-neg">sospeso fino al {fmtDate(u.banned_until!)}</span>}<div className="tiny muted">dal {fmtDate(u.created_at)}</div></span>
-              {!u.is_superadmin && (banned
-                ? <ActionButton size="sm" okMessage="Riattivato" onAction={async () => { await adminSetBan(u.id, null); await users.reload(); }}>Riattiva</ActionButton>
-                : <span className="row">
-                  <ActionButton size="sm" variant="danger" okMessage="Sospeso 7 giorni" onAction={async () => { await adminSetBan(u.id, new Date(Date.now() + 7 * 86_400_000).toISOString()); await users.reload(); }}>7 giorni</ActionButton>
-                  <ActionButton size="sm" variant="danger" okMessage="Sospeso 1 anno" onAction={async () => { await adminSetBan(u.id, new Date(Date.now() + 365 * 86_400_000).toISOString()); await users.reload(); }}>Lungo</ActionButton>
-                </span>)}
+              <span><b>{u.username}</b> <VerifiedMark profile={u} /> {u.is_superadmin && <span className="badge badge-accent">SA</span>} {banned && <span className="badge badge-neg">sospeso fino al {fmtDate(u.banned_until!)}</span>}<div className="tiny muted">dal {fmtDate(u.created_at)}</div></span>
+              <span className="row row-wrap">
+                <ActionButton size="sm" variant={u.verified ? 'default' : 'primary'} okMessage={u.verified ? 'Spunta rimossa' : 'Spunta assegnata'}
+                  onAction={async () => { await adminSetVerified(u.id, !u.verified); await users.reload(); }}>{u.verified ? 'Rimuovi spunta' : 'Assegna spunta'}</ActionButton>
+                {!u.is_superadmin && (banned
+                  ? <ActionButton size="sm" okMessage="Riattivato" onAction={async () => { await adminSetBan(u.id, null); await users.reload(); }}>Riattiva</ActionButton>
+                  : <>
+                    <ActionButton size="sm" variant="danger" okMessage="Sospeso 7 giorni" onAction={async () => { await adminSetBan(u.id, new Date(Date.now() + 7 * 86_400_000).toISOString()); await users.reload(); }}>7 giorni</ActionButton>
+                    <ActionButton size="sm" variant="danger" okMessage="Sospeso 1 anno" onAction={async () => { await adminSetBan(u.id, new Date(Date.now() + 365 * 86_400_000).toISOString()); await users.reload(); }}>Lungo</ActionButton>
+                  </>)}
+              </span>
             </div>
           );
         })}
