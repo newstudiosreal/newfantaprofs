@@ -5,6 +5,7 @@ export interface Profile {
   avatar_url: string | null;
   bio: string;
   is_superadmin: boolean;
+  verified: boolean;
   banned_until: string | null;
   created_at: string;
 }
