@@ -195,7 +195,11 @@ pre.code { padding: 12px; overflow-x: auto; }
 .chat-input-wrap .input { width: 100%; }
 
 /* Spunta di verifica: solo il segno colorato, nessun badge/cerchio bianco dietro */
-.verified-mark { flex: none; display: inline-block; vertical-align: -3px; }
+.verified-mark { flex: none; display: inline-block; vertical-align: -3px; width: 16px; height: 16px; }
+.user-name { display: inline-flex; align-items: center; gap: 5px; }
+/* Solo nel profilo: check più grande e centrato verticalmente con lo username */
+.profile-name { display: inline-flex; align-items: center; gap: 8px; }
+.profile-name .verified-mark { width: 0.6em; height: 0.6em; }
 
 /* Menzioni in chat: testo evidenziato, non un badge a sé */
 .mention { color: var(--info); font-weight: 800; cursor: pointer; }
