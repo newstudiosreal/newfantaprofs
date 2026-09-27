@@ -10,12 +10,12 @@ import { AuthPage } from './pages/AuthPage';
 import { Dashboard } from './pages/Dashboard';
 import { Rules } from './pages/Rules';
 import { News } from './pages/News';
-import { HallOfFame } from './pages/HallOfFame';
 import { ProfilePage } from './pages/ProfilePage';
 import { ModeScreen, SetupScreen, BannedScreen } from './pages/SystemScreens';
 
 const LeagueLayout = lazy(() => import('./pages/league/LeagueLayout'));
 const SuperAdmin = lazy(() => import('./pages/SuperAdmin'));
+const CommunityLayout = lazy(() => import('./pages/community/CommunityLayout'));
 
 type Mode = 'normal' | 'estate' | 'maintenance';
 
@@ -54,7 +54,7 @@ export function App() {
           <Route path="registrati" element={session ? <Navigate to="/" replace /> : <AuthPage mode="register" />} />
           <Route path="regole" element={<Rules />} />
           <Route path="news" element={<News />} />
-          <Route path="hof" element={<Protected><HallOfFame /></Protected>} />
+          <Route path="community/*" element={<Protected><CommunityLayout /></Protected>} />
           <Route path="profilo" element={<Protected><ProfilePage /></Protected>} />
           <Route path="profilo/:username" element={<Protected><ProfilePage /></Protected>} />
           <Route path="leghe/:leagueId/*" element={<Protected><LeagueLayout /></Protected>} />
