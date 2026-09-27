@@ -1,7 +1,8 @@
 import { supabase } from './supabase';
 import type {
-  Announcement, Entitlement, Forecast, GameEvent, HofRow, League, Listing, Member, Message, Mission,
-  MissionClaim, Powerup, PremiumCode, Professor, Profile, Rotation, Team, TeamProfessor, TeamScore, Trade,
+  Announcement, AppNotification, AuditLog, CommunityUser, Conversation, DirectMessage, Entitlement, Forecast, GameEvent,
+  League, Listing, Member, Message, Mission, MissionClaim, Powerup, PremiumCode, Professor, Profile, PublicProfile,
+  Report, ReportReason, ReportStatus, Rotation, Team, TeamProfessor, TeamScore, Trade,
 } from './types';
 
 /** Esegue una funzione RPC e lancia l'errore originale (con hint/code) se fallisce. */
@@ -116,8 +117,6 @@ export const listEntitlements = (userId: string) =>
 export const listAnnouncements = () =>
   rows<Announcement>(supabase.from('announcements').select('*').order('pinned', { ascending: false }).order('created_at', { ascending: false }));
 
-export const hallOfFame = () => rpc<HofRow[]>('hall_of_fame');
-
 export const getProfileByUsername = async (username: string) => {
   const { data, error } = await supabase.from('profiles').select('*').eq('username', username).maybeSingle();
   if (error) throw error;
@@ -194,10 +193,98 @@ export const adminSetLeagueSuspended = (leagueId: string, suspended: boolean) =>
   rpc('admin_set_league_suspended', { p_league: leagueId, p_suspended: suspended });
 export const adminSetVerified = (userId: string, verified: boolean) =>
   rpc('admin_set_verified', { p_user: userId, p_verified: verified });
-export const adminResetHof = () => rpc('admin_reset_hof');
 export const adminListProfiles = () => rows<Profile>(supabase.from('profiles').select('*').order('created_at', { ascending: false }));
 export const adminListTrades = () =>
   rows<Trade>(supabase.from('trades').select('*').order('created_at', { ascending: false }).limit(100));
+
+// ── Community, chat privata, blocchi, segnalazioni, notifiche ─────
+export const touchPresence = () => rpc('touch_presence');
+export const searchCommunity = (query: string) => rpc<CommunityUser[]>('search_community', { p_query: query });
+export const getPublicProfile = (userId: string) => rpc<PublicProfile[]>('get_public_profile', { p_user: userId }).then(r => r[0] ?? null);
+export const getPublicProfileByUsername = (username: string) =>
+  rpc<PublicProfile[]>('get_public_profile_by_username', { p_username: username }).then(r => r[0] ?? null);
+export const canMessage = (userId: string) => rpc<boolean>('can_message', { p_target: userId });
+export const blockUser = (userId: string) => rpc('block_user', { p_target: userId });
+export const unblockUser = (userId: string) => rpc('unblock_user', { p_target: userId });
+export const reportUser = (userId: string, reason: ReportReason, description = '') =>
+  rpc<string>('report_user', { p_target: userId, p_reason: reason, p_description: description });
+
+export const startConversation = (userId: string) => rpc<string>('start_conversation', { p_target: userId });
+export const sendDm = (conversationId: string, body: string) => rpc<string>('send_dm', { p_conversation: conversationId, p_body: body });
+export const deleteDmMessage = (id: string) => rpc('delete_dm_message', { p_message: id });
+export const markConversationRead = (conversationId: string) => rpc('mark_conversation_read', { p_conversation: conversationId });
+export const listDmMessages = (conversationId: string) =>
+  rows<DirectMessage>(supabase.from('direct_messages').select('*').eq('conversation_id', conversationId).order('created_at'));
+
+export interface ConversationSummary { conversation: Conversation; other: CommunityUser | null; last: DirectMessage | null; unread: number }
+/** Le mie conversazioni con, per ciascuna, l'altro partecipante e l'ultimo messaggio. */
+export async function listMyConversations(myId: string): Promise<ConversationSummary[]> {
+  const mine = await rows<{ conversation_id: string; last_read_at: string }>(
+    supabase.from('conversation_members').select('conversation_id, last_read_at').eq('user_id', myId));
+  if (!mine.length) return [];
+  const ids = mine.map(m => m.conversation_id);
+  const [members, msgs, profiles] = await Promise.all([
+    rows<{ conversation_id: string; user_id: string }>(supabase.from('conversation_members').select('conversation_id, user_id').in('conversation_id', ids)),
+    rows<DirectMessage>(supabase.from('direct_messages').select('*').in('conversation_id', ids).order('created_at', { ascending: false })),
+    rows<Profile>(supabase.from('profiles').select('id, username, avatar, avatar_url, verified')),
+  ]);
+  const profById = new Map(profiles.map(p => [p.id, p]));
+  const readAt = new Map(mine.map(m => [m.conversation_id, m.last_read_at]));
+  return ids.map(id => {
+    const other = members.find(m => m.conversation_id === id && m.user_id !== myId)?.user_id;
+    const p = other ? profById.get(other) : undefined;
+    const last = msgs.find(m => m.conversation_id === id) ?? null;
+    const unread = msgs.filter(m => m.conversation_id === id && m.author_id !== myId && new Date(m.created_at) > new Date(readAt.get(id) ?? 0)).length;
+    return {
+      conversation: { id, created_at: '' },
+      other: p ? { id: p.id, username: p.username, avatar: p.avatar, avatar_url: p.avatar_url, verified: p.verified, online: false } : null,
+      last, unread,
+    };
+  }).sort((a, b) => (b.last?.created_at ?? '').localeCompare(a.last?.created_at ?? ''));
+}
+
+/** L'altro partecipante di una conversazione, con stato online/bloccato aggiornato. */
+export async function getConversationPeer(conversationId: string, myId: string): Promise<PublicProfile | null> {
+  const members = await rows<{ user_id: string }>(supabase.from('conversation_members').select('user_id').eq('conversation_id', conversationId));
+  const otherId = members.find(m => m.user_id !== myId)?.user_id;
+  return otherId ? getPublicProfile(otherId) : null;
+}
+
+export const listNotifications = (userId: string) =>
+  rows<AppNotification>(supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(30));
+export const unreadNotificationsCount = async (userId: string) => {
+  const { count, error } = await supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', userId).is('read_at', null);
+  if (error) throw error;
+  return count ?? 0;
+};
+export const markNotificationRead = (id: string) => rpc('mark_notification_read', { p_id: id });
+export const markAllNotificationsRead = () => rpc('mark_all_notifications_read');
+
+// ── SuperAdmin: Community, punti manuali, audit log ───────────────
+export const adminListReports = (status?: ReportStatus) => rpc<Report[]>('admin_list_reports', { p_status: status ?? null });
+export const adminTakeReport = (id: string) => rpc('admin_take_report', { p_report: id });
+export const adminCloseReport = (id: string, status: 'risolta' | 'archiviata') => rpc('admin_close_report', { p_report: id, p_status: status });
+export const adminViewConversation = (conversationId: string, reason: string) =>
+  rpc<DirectMessage[]>('admin_view_conversation', { p_conversation: conversationId, p_reason: reason });
+export const adminFindConversation = (userA: string, userB: string, reason: string) =>
+  rpc<DirectMessage[]>('admin_find_conversation_messages', { p_a: userA, p_b: userB, p_reason: reason });
+
+export const adminUpdateUsername = (userId: string, username: string) => rpc('admin_update_username', { p_user: userId, p_username: username });
+export const adminRemoveAvatar = (userId: string) => rpc('admin_remove_avatar', { p_user: userId });
+/** Unica via sicura per resettare la password di un altro utente: chiama l'Edge Function con service role. */
+export async function adminResetPassword(userId: string): Promise<string> {
+  const { data, error } = await supabase.functions.invoke<{ tempPassword?: string; error?: string }>('admin-reset-password', { body: { userId } });
+  if (error) throw error;
+  if (!data?.tempPassword) throw new Error(data?.error ?? 'Reset non riuscito');
+  return data.tempPassword;
+}
+
+export const adminAddTeamProfessor = (teamId: string, profId: string) => rpc('admin_add_team_professor', { p_team: teamId, p_prof: profId });
+export const adminRemoveTeamProfessor = (teamId: string, profId: string) => rpc('admin_remove_team_professor', { p_team: teamId, p_prof: profId });
+export const adminAdjustPoints = (targetType: 'professor' | 'team', targetId: string, delta: number, reason: string) =>
+  rpc('admin_adjust_points', { p_target_type: targetType, p_target_id: targetId, p_delta: delta, p_reason: reason || null });
+
+export const adminListAudit = (limit = 100) => rpc<AuditLog[]>('admin_list_audit', { p_limit: limit });
 
 export const saveAnnouncement = async (a: Partial<Announcement> & { title: string; body: string }) => {
   const { error } = a.id
