@@ -1,15 +1,36 @@
 import { useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ActionButton, Avatar, Button, Empty, ErrorState, Field, Loading, VerifiedMark } from '@/components/ui';
+import { ActionButton, Avatar, Button, Empty, ErrorState, Field, Loading, Modal, Select, VerifiedMark } from '@/components/ui';
 import { useAsync } from '@/hooks/useAsync';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
-import { getProfileByUsername, listEntitlements, redeemCode, setAvatarUrl, updateProfile } from '@/lib/api';
+import {
+  blockUser, getPublicProfileByUsername, listEntitlements, redeemCode, reportUser, setAvatarUrl, startConversation,
+  unblockUser, updateProfile,
+} from '@/lib/api';
 import { explain } from '@/lib/errors';
 import { fmtDate } from '@/lib/format';
 import { badgeLabel, NAME_FX, SKINS } from '@/lib/premium';
 import { supabase } from '@/lib/supabase';
-import type { Profile } from '@/lib/types';
+import type { Profile, ReportReason } from '@/lib/types';
+
+const REPORT_REASONS: { id: ReportReason; label: string }[] = [
+  { id: 'insulti', label: 'Insulti' }, { id: 'spam', label: 'Spam' }, { id: 'comportamento', label: 'Comportamento scorretto' },
+  { id: 'abuso_chat', label: 'Abuso della chat' }, { id: 'profilo', label: 'Profilo inappropriato' }, { id: 'altro', label: 'Altro' },
+];
+
+function ReportModal({ username, userId, onClose }: { username: string; userId: string; onClose: () => void }) {
+  const [reason, setReason] = useState<ReportReason>('insulti');
+  const [desc, setDesc] = useState('');
+  return (
+    <Modal title={`Segnala @${username}`} onClose={onClose}>
+      <Field label="Motivo"><Select value={reason} onChange={v => setReason(v as ReportReason)} aria-label="Motivo">
+        {REPORT_REASONS.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}</Select></Field>
+      <Field label="Descrizione (facoltativa)"><textarea className="input" maxLength={1000} value={desc} onChange={e => setDesc(e.target.value)} /></Field>
+      <ActionButton variant="danger" block okMessage="Segnalazione inviata" onAction={async () => { await reportUser(userId, reason, desc.trim()); onClose(); }}>Invia segnalazione</ActionButton>
+    </Modal>
+  );
+}
 
 const EMOJIS = ['🎓', '📚', '🧠', '🦉', '🦊', '🐯', '🐼', '🦄', '🐸', '🐙', '🚀', '🔥', '⚡', '🌟', '👑', '🎯', '🎮', '🎧', '🍕', '☕', '⚽', '🏀', '🎸', '🌈'];
 
@@ -113,7 +134,9 @@ function OwnProfile({ profile }: { profile: Profile }) {
 export function ProfilePage() {
   const { username } = useParams();
   const { profile } = useAuth();
-  const other = useAsync(() => getProfileByUsername(username!), [username], { enabled: !!username && username.toLowerCase() !== profile?.username.toLowerCase() });
+  const nav = useNavigate();
+  const [reportOpen, setReportOpen] = useState(false);
+  const other = useAsync(() => getPublicProfileByUsername(username!), [username], { enabled: !!username && username.toLowerCase() !== profile?.username.toLowerCase() });
   const isOwn = !username || username.toLowerCase() === profile?.username.toLowerCase();
 
   return (
@@ -125,11 +148,30 @@ export function ProfilePage() {
       {!isOwn && other.data && (
         <div className="card">
           <div className="row"><Avatar profile={other.data} large />
-            <div><h2 style={{ fontSize: '2.2rem' }}><span className="profile-name">{other.data.username}<VerifiedMark profile={other.data} /></span></h2><p className="muted small" style={{ margin: 0 }}>Iscritto dal {fmtDate(other.data.created_at)}</p></div></div>
+            <div>
+              <h2 style={{ fontSize: '2.2rem' }}><span className="profile-name">{other.data.username}<VerifiedMark profile={other.data} /></span></h2>
+              <p className="muted small" style={{ margin: 0 }}>Iscritto dal {fmtDate(other.data.created_at)} · {other.data.online ? '🟢 Online' : '⚪ Offline'}</p>
+            </div>
+          </div>
           {other.data.bio && <p style={{ marginTop: 12 }}>{other.data.bio}</p>}
           <Badges userId={other.data.id} />
+          <div className="row row-wrap" style={{ marginTop: 14 }}>
+            {other.data.is_blocked_by_me ? (
+              <ActionButton size="sm" okMessage="Utente sbloccato" onAction={async () => { await unblockUser(other.data!.id); await other.reload(); }}>🔓 Sblocca</ActionButton>
+            ) : (
+              <>
+                {other.data.can_message && (
+                  <ActionButton size="sm" variant="primary" onAction={async () => { const id = await startConversation(other.data!.id); nav(`/community/messaggi/${id}`); }}>💬 Messaggio</ActionButton>
+                )}
+                <ActionButton size="sm" variant="danger" okMessage="Utente bloccato" onAction={async () => { await blockUser(other.data!.id); await other.reload(); }}>🚫 Blocca</ActionButton>
+                <Button size="sm" variant="ghost" onClick={() => setReportOpen(true)}>🚩 Segnala</Button>
+              </>
+            )}
+          </div>
+          {!other.data.is_blocked_by_me && !other.data.can_message && <p className="tiny muted" style={{ marginTop: 8 }}>Utente bloccato: non potete scrivervi.</p>}
         </div>
       )}
+      {reportOpen && other.data && <ReportModal username={other.data.username} userId={other.data.id} onClose={() => setReportOpen(false)} />}
     </main>
   );
 }
