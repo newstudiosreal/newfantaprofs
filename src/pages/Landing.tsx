@@ -19,7 +19,6 @@ export function Landing() {
           </p>
           <div className="row row-wrap" style={{ marginTop: 20 }}>
             <Link to="/registrati" className="btn btn-primary btn-lg">Gioca ora</Link>
-            <Link to="/hof" className="btn btn-lg">Classifica</Link>
             <Link to="/regole" className="btn btn-lg">Come funziona</Link>
           </div>
           <div className="row" style={{ marginTop: 14 }}>
