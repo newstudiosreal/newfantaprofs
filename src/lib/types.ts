@@ -10,6 +10,34 @@ export interface Profile {
   created_at: string;
 }
 
+export interface PublicProfile {
+  id: string; username: string; avatar: string; avatar_url: string | null; bio: string; verified: boolean; created_at: string;
+  online: boolean; is_blocked_by_me: boolean; can_message: boolean;
+}
+export interface CommunityUser { id: string; username: string; avatar: string; avatar_url: string | null; verified: boolean; online: boolean }
+
+export type ReportReason = 'insulti' | 'spam' | 'comportamento' | 'abuso_chat' | 'profilo' | 'altro';
+export type ReportStatus = 'in_attesa' | 'in_esame' | 'risolta' | 'archiviata';
+export interface Report {
+  id: string; reporter_id: string; reported_id: string; reason: ReportReason; description: string;
+  status: ReportStatus; admin_id: string | null; created_at: string; closed_at: string | null;
+}
+
+export interface Conversation { id: string; created_at: string }
+export interface ConversationMember { conversation_id: string; user_id: string; last_read_at: string }
+export interface DirectMessage {
+  id: string; conversation_id: string; author_id: string; body: string | null; created_at: string; deleted_at: string | null;
+}
+
+export interface AppNotification {
+  id: string; user_id: string; type: string; payload: Record<string, unknown>; read_at: string | null; created_at: string;
+}
+
+export interface AuditLog {
+  id: string; admin_id: string | null; action: string; target_type: string | null; target_id: string | null;
+  details: Record<string, unknown>; reason: string | null; created_at: string;
+}
+
 export interface CatalogEvent { id: string; label: string; pts: number; maxPerWeek?: number | null }
 
 export interface League {
