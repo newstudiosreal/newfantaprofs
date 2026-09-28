@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { EasterEgg } from '@/components/EasterEgg';
 import { Empty, ErrorState, Loading } from '@/components/ui';
 import { useAsync } from '@/hooks/useAsync';
 import { listAnnouncements } from '@/lib/api';
@@ -8,12 +9,14 @@ export const NEWS_SEEN_KEY = 'fp_news_seen';
 
 export function News() {
   const { data, error, loading, reload } = useAsync(listAnnouncements, []);
+  const [egg, setEgg] = useState(true);
   useEffect(() => {
     if (data?.length) { try { localStorage.setItem(NEWS_SEEN_KEY, String(Date.now())); } catch { /* ignora */ } }
   }, [data]);
 
   return (
     <main className="page">
+      {egg && <EasterEgg onClose={() => setEgg(false)} />}
       <h1 style={{ fontSize: '3rem', marginBottom: 14 }}>News</h1>
       {loading && <Loading />}
       {error != null && <ErrorState error={error} onRetry={reload} />}
