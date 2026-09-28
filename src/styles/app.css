@@ -239,4 +239,10 @@ pre.code { padding: 12px; overflow-x: auto; }
 .status-dot { position: absolute; right: -1px; bottom: -1px; width: 11px; height: 11px; border-radius: 50%; background: var(--pos); border: 2px solid var(--surface); }
 .bell-dot { position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 8px; background: var(--neg); color: #fff; font-size: .6rem; font-weight: 800; display: grid; place-items: center; line-height: 1; }
 
+.egg-back { position: fixed; inset: 0; z-index: 90; background: rgba(0, 0, 0, .9); display: grid; place-items: center; padding: 16px; }
+.egg-box { position: relative; width: min(100%, 480px); border-radius: var(--r); overflow: hidden; background: #000; animation: sheet .2s ease-out; }
+.egg-video { display: block; width: 100%; max-height: 82vh; }
+.egg-close { position: absolute; top: 8px; right: 8px; width: 34px; height: 34px; border-radius: 50%; border: none; background: rgba(0, 0, 0, .55); color: #fff; font-size: 1rem; line-height: 1; cursor: pointer; z-index: 1; }
+.egg-close:hover { background: rgba(0, 0, 0, .8); }
+
 @media (min-width: 1100px) { .tabs { padding-inline: calc((100% - 1040px) / 2 + 32px); } }
