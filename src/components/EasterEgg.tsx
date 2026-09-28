@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 const VIDEO_SRC = '/easter-egg.mp4';
 
@@ -17,16 +18,16 @@ export function EasterEgg({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
-    // Alcuni browser bloccano l'audio in autoplay: se succede, riprova in muto.
     v.play().catch(() => { v.muted = true; void v.play(); });
   }, []);
 
-  return (
+  return createPortal(
     <div className="egg-back" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="egg-box" role="dialog" aria-modal="true" aria-label="Sorpresa">
         <button className="egg-close" onClick={onClose} aria-label="Chiudi">✕</button>
         <video ref={ref} className="egg-video" src={VIDEO_SRC} playsInline autoPlay onEnded={onClose} />
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
