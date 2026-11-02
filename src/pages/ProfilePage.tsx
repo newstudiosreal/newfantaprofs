@@ -8,6 +8,9 @@ import {
   blockUser, getPublicProfileByUsername, listEntitlements, redeemCode, reportUser, setAvatarUrl, startConversation,
   unblockUser, updateProfile,
 } from '@/lib/api';
+import { SecuritySection } from '@/components/SecuritySection';
+import { FollowButton, FollowCounts } from '@/components/FollowButton';
+import { PushToggle } from '@/components/PushToggle';
 import { explain } from '@/lib/errors';
 import { fmtDate } from '@/lib/format';
 import { badgeLabel, NAME_FX, SKINS } from '@/lib/premium';
@@ -59,12 +62,10 @@ function Badges({ userId }: { userId: string }) {
 }
 
 function OwnProfile({ profile }: { profile: Profile }) {
-  const { signOut, changePassword, refreshProfile } = useAuth();
+  const { refreshProfile } = useAuth();
   const toast = useToast();
-  const nav = useNavigate();
   const [bio, setBio] = useState(profile.bio);
   const [code, setCode] = useState('');
-  const [pw, setPw] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
   const upload = async (file: File) => {
@@ -119,14 +120,10 @@ function OwnProfile({ profile }: { profile: Profile }) {
         <p className="hint">Skin disponibili: {SKINS.slice(1).map(s => s.name).join(', ')} · Effetti: {NAME_FX.map(f => f.name).join(', ')}</p>
       </div>
 
-      <div className="section-title"><h2>Sicurezza</h2></div>
-      <div className="card">
-        <Field label="Nuova password" hint="Almeno 6 caratteri"><input className="input" type="password" autoComplete="new-password" value={pw} onChange={e => setPw(e.target.value)} /></Field>
-        <div className="row">
-          <ActionButton disabled={pw.length < 6} okMessage="Password cambiata" onAction={async () => { await changePassword(pw); setPw(''); }}>Cambia password</ActionButton>
-          <ActionButton variant="danger" onAction={async () => { await signOut(); nav('/', { replace: true }); }}>Esci</ActionButton>
-        </div>
-      </div>
+      <div className="section-title"><h2>Notifiche</h2></div>
+      <PushToggle />
+
+      <SecuritySection profile={profile} />
     </>
   );
 }
@@ -155,11 +152,13 @@ export function ProfilePage() {
           </div>
           {other.data.bio && <p style={{ marginTop: 12 }}>{other.data.bio}</p>}
           <Badges userId={other.data.id} />
+          <FollowCounts userId={other.data.id} />
           <div className="row row-wrap" style={{ marginTop: 14 }}>
             {other.data.is_blocked_by_me ? (
               <ActionButton size="sm" okMessage="Utente sbloccato" onAction={async () => { await unblockUser(other.data!.id); await other.reload(); }}>🔓 Sblocca</ActionButton>
             ) : (
               <>
+                <FollowButton userId={other.data.id} />
                 {other.data.can_message && (
                   <ActionButton size="sm" variant="primary" onAction={async () => { const id = await startConversation(other.data!.id); nav(`/community/messaggi/${id}`); }}>💬 Messaggio</ActionButton>
                 )}

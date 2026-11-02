@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react';
 import type { LeagueBundle } from '@/lib/api';
 import type { Professor, Profile, Team, TeamScore } from '@/lib/types';
+import type { CoadminPerm } from '@/lib/types.social';
 
 export interface LeagueCtx {
   bundle: LeagueBundle;
@@ -9,6 +10,8 @@ export interface LeagueCtx {
   isSuper: boolean;
   isAdmin: boolean;
   isOwner: boolean;
+  /** Può fare questa azione di gestione? Proprietario e SuperAdmin sempre; i co-admin secondo i permessi della lega. */
+  can: (perm: CoadminPerm) => boolean;
   myTeam: Team | undefined;
   myScore: number;
   /** Punti disponibili da spendere sul mercato (= punteggio della squadra). */

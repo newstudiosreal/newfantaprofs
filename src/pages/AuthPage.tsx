@@ -37,14 +37,15 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
         <Field label="Password" hint={register ? 'Almeno 6 caratteri' : undefined}>
           <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete={register ? 'new-password' : 'current-password'} required />
         </Field>
+        {!register && <p className="small" style={{ margin: '0 0 10px' }}><Link to="/recupera">Password dimenticata?</Link></p>}
         {error && <p role="alert" style={{ color: 'var(--neg)', fontWeight: 600 }}>{error}</p>}
         <Button type="submit" variant="primary" size="lg" block disabled={busy || !username || !password}>
           {busy ? 'Un attimo…' : register ? 'Crea account' : 'Accedi'}
         </Button>
       </form>
       <p className="center muted small" style={{ marginTop: 16 }}>
-        {register ? <>Hai già un account? <Link to="/accedi" className="bold">Accedi</Link></>
-          : <>Non hai un account? <Link to="/registrati" className="bold">Registrati</Link></>}
+        {register ? <>Hai già un account? <Link to="/accedi" state={loc.state} className="bold">Accedi</Link></>
+          : <>Non hai un account? <Link to="/registrati" state={loc.state} className="bold">Registrati</Link></>}
       </p>
     </main>
   );

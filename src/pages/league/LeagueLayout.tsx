@@ -3,14 +3,17 @@ import { NavLink, Route, Routes, useParams } from 'react-router-dom';
 import { ErrorState, Loading } from '@/components/ui';
 import { useAsync } from '@/hooks/useAsync';
 import { useAuth } from '@/hooks/useAuth';
+import { useRealtime } from '@/hooks/useRealtime';
 import { loadLeagueBundle, pendingTradesForMe } from '@/lib/api';
 import { applySkin, getSavedSkin } from '@/lib/premium';
 import { supabase } from '@/lib/supabase';
 import { seasonInfo } from '@/lib/season';
+import type { Profile } from '@/lib/types';
 import { LeagueContext, type LeagueCtx } from './context';
 import { Standings } from './Standings';
 import { MyTeam } from './MyTeam';
 import { Professors } from './Professors';
+import ProfessorDetail from './ProfessorDetail';
 import { Market } from './Market';
 import { Trades } from './Trades';
 import { Missions } from './Missions';
@@ -18,6 +21,9 @@ import { Forecast } from './Forecast';
 import { Chat, chatSeenKey } from './Chat';
 import { Admin } from './Admin';
 import { ProPage } from './ProPage';
+import { Duels } from './Duels';
+import { Proposals } from './Proposals';
+import { Seasons } from './Seasons';
 
 async function loadBadges(leagueId: string, userId: string) {
   let seen = 0;
@@ -31,11 +37,23 @@ async function loadBadges(leagueId: string, userId: string) {
 }
 
 export default function LeagueLayout() {
-  const { leagueId = '' } = useParams();
   const { profile } = useAuth();
-  const me = profile!;
-  const { data: bundle, error, loading, reload } = useAsync(() => loadLeagueBundle(leagueId), [leagueId], { interval: 30_000 });
-  const badges = useAsync(() => loadBadges(leagueId, me.id), [leagueId, me.id], { interval: 45_000 });
+  if (!profile) return <main className="page"><Loading /></main>;
+  return <LeagueLayoutInner me={profile} />;
+}
+
+function LeagueLayoutInner({ me }: { me: Profile }) {
+  const { leagueId = '' } = useParams();
+  // Il polling lento è solo una rete di sicurezza: gli aggiornamenti arrivano in tempo reale.
+  const { data: bundle, error, loading, reload } = useAsync(() => loadLeagueBundle(leagueId), [leagueId], { interval: 120_000 });
+  const badges = useAsync(() => loadBadges(leagueId, me.id), [leagueId, me.id], { interval: 120_000 });
+  const lf = `league_id=eq.${leagueId}`;
+  useRealtime(
+    [{ table: 'events', filter: lf }, { table: 'teams', filter: lf }, 'team_professors', { table: 'trades', filter: lf },
+      { table: 'market_listings', filter: lf }, { table: 'duels', filter: lf }, { table: 'league_members', filter: lf }, { table: 'leagues', filter: `id=eq.${leagueId}` }],
+    { onChange: () => { void reload(); void badges.reload(); }, debounceMs: 700 },
+  );
+  useRealtime([{ table: 'messages', filter: lf }], { onChange: () => { void badges.reload(); }, debounceMs: 700 });
 
   // Skin scelta (solo per me): applicata mentre sono in lega.
   useEffect(() => {
@@ -54,6 +72,7 @@ export default function LeagueLayout() {
     const profMap = new Map(professors.map(p => [p.id, p]));
     return {
       bundle, reload, meId: me.id, isSuper, isAdmin, isOwner, myTeam,
+      can: perm => isOwner || (isAdmin && (league.coadmin_perms?.[perm] ?? (perm !== 'members'))),
       myScore: scores.find(s => s.owner_id === me.id)?.score ?? 0,
       profById: id => profMap.get(id),
       userById: id => profiles[id],
@@ -67,16 +86,20 @@ export default function LeagueLayout() {
   if (!ctx) return null;
 
   const { league } = ctx.bundle;
-  const season = seasonInfo(league.season_start);
+  const season = seasonInfo(league.season_start, league.season_num);
+  const emptyTeam = !!ctx.myTeam && ctx.teamProfs(ctx.myTeam.id).length === 0;
   const tabs: { to: string; label: string; end?: boolean; n?: number; show?: boolean }[] = [
     { to: '', label: 'Classifica', end: true },
     { to: 'squadra', label: 'Squadra' },
     { to: 'professori', label: 'Professori' },
     { to: 'mercato', label: 'Mercato' },
     { to: 'scambi', label: 'Scambi', n: badges.data?.trades },
+    { to: 'sfide', label: 'Sfide' },
     { to: 'missioni', label: 'Missioni', show: league.missions_enabled },
     { to: 'pronostici', label: 'Pronostici' },
+    { to: 'proposte', label: 'Proposte' },
     { to: 'chat', label: 'Chat', n: badges.data?.chat },
+    { to: 'stagioni', label: 'Stagioni' },
     { to: 'pro', label: '⚡ Pro', show: ctx.bundle.proOwner },
     { to: 'gestione', label: 'Gestione', show: ctx.isAdmin },
   ];
@@ -95,7 +118,9 @@ export default function LeagueLayout() {
           <div style={{ minWidth: 0 }}>
             <h1 style={{ fontSize: 'clamp(2rem, 7vw, 3rem)' }} className="ellipsis">{league.name}</h1>
             <p className="muted small" style={{ margin: 0 }}>
-              {season.active ? `Stagione ${season.num} · ${season.left} giorni alla fine` : `Pausa tra stagioni · ${season.left} giorni al via`}
+              {season.state === 'active' ? `Stagione ${season.num} · ${season.left} giorni alla fine`
+                : season.state === 'pause' ? `Pausa tra stagioni · ${season.left} giorni al via della stagione ${season.num}`
+                : `Stagione ${season.num} finita`}
               {league.suspended && ' · LEGA SOSPESA'}
             </p>
           </div>
@@ -103,12 +128,28 @@ export default function LeagueLayout() {
             Codice <b className="code">{league.code}</b>
           </button>
         </div>
+        {season.state === 'ended' && (
+          <div className="card row row-wrap between" style={{ marginBottom: 14 }}>
+            <span className="small"><b>🏁 Stagione finita.</b> {ctx.isAdmin ? 'La chiusura è manuale: chiudila per archiviare la classifica e far ripartire le squadre.' : "L'admin deve chiuderla: poi la classifica verrà archiviata e le squadre ripartiranno da zero."}</span>
+            {ctx.isAdmin && <NavLink to="gestione" className="btn btn-sm btn-primary">Vai alle impostazioni</NavLink>}
+          </div>
+        )}
+        {emptyTeam && season.state !== 'ended' && (
+          <div className="card row row-wrap between" style={{ marginBottom: 14 }}>
+            <span className="small"><b>🔁 {season.state === 'pause' ? 'Pausa tra stagioni' : 'Nuova stagione'}.</b> La tua squadra è senza professori: ricostruiscila con 50 crediti.</span>
+            <NavLink to="squadra" className="btn btn-sm btn-primary">Ricostruisci la squadra</NavLink>
+          </div>
+        )}
         <Routes>
           <Route index element={<Standings />} />
           <Route path="squadra" element={<MyTeam />} />
           <Route path="professori" element={<Professors />} />
+          <Route path="professori/:profId" element={<ProfessorDetail />} />
           <Route path="mercato" element={<Market />} />
           <Route path="scambi" element={<Trades />} />
+          <Route path="sfide" element={<Duels />} />
+          <Route path="proposte" element={<Proposals />} />
+          <Route path="stagioni" element={<Seasons />} />
           <Route path="missioni" element={<Missions />} />
           <Route path="pronostici" element={<Forecast />} />
           <Route path="chat" element={<Chat />} />

@@ -4,18 +4,35 @@ export const CYCLE_DAYS = SEASON_DAYS + PAUSE_DAYS;
 export const TEAM_BUDGET = 50;
 export const TEAM_MAX_PROFS = 4;
 
-export interface SeasonInfo { active: boolean; left: number; num: number }
+export type SeasonState = 'active' | 'pause' | 'ended';
+export interface SeasonInfo {
+  state: SeasonState;
+  /** Comodo per i vecchi usi: true solo con stagione in corso. */
+  active: boolean;
+  /** Giorni alla fine (active), all'inizio (pause); 0 se ended. */
+  left: number;
+  /** Numero della stagione corrente (o imminente, in pausa). */
+  num: number;
+}
 
-/** Stagione di 30 giorni + 3 di pausa, contata dalla data di inizio della lega (regola V1). */
-export function seasonInfo(seasonStartIso: string, now = Date.now()): SeasonInfo {
+/**
+ * La stagione dura 30 giorni da `season_start`. Il server, alla chiusura, archivia la classifica,
+ * azzera i punti, svuota le squadre e sposta `season_start` 33 giorni dopo: nei 3 giorni di pausa
+ * `season_start` è nel futuro. Se la lega è in modalità manuale, dopo i 30 giorni resta "ended"
+ * finché un admin non la chiude.
+ */
+export function seasonInfo(seasonStartIso: string, num: number, now = Date.now()): SeasonInfo {
   const days = (now - new Date(seasonStartIso).getTime()) / 86_400_000;
-  const pos = ((days % CYCLE_DAYS) + CYCLE_DAYS) % CYCLE_DAYS;
-  const active = pos < SEASON_DAYS;
-  return {
-    active,
-    num: Math.max(1, Math.floor(days / CYCLE_DAYS) + 1),
-    left: Math.ceil(active ? SEASON_DAYS - pos : CYCLE_DAYS - pos),
-  };
+  if (days < 0) return { state: 'pause', active: false, left: Math.ceil(-days), num };
+  if (days >= SEASON_DAYS) return { state: 'ended', active: false, left: 0, num };
+  return { state: 'active', active: true, left: Math.ceil(SEASON_DAYS - days), num };
+}
+
+/** Testo breve per badge e intestazioni. */
+export function seasonLabel(s: SeasonInfo): string {
+  if (s.state === 'active') return `Stagione ${s.num} · ${s.left}g`;
+  if (s.state === 'pause') return `Pausa · ${s.left}g al via`;
+  return `Stagione ${s.num} finita`;
 }
 
 /** True se una selezione di professori rispetta budget (50 crediti) e limite (4). */

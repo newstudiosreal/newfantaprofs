@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { tickLeague } from './api.game';
 import type {
   Announcement, AppNotification, AuditLog, CommunityUser, Conversation, DirectMessage, Entitlement, Forecast, GameEvent,
   League, Listing, Member, Message, Mission, MissionClaim, Powerup, PremiumCode, Professor, Profile, PublicProfile,
@@ -34,6 +35,9 @@ export interface LeagueBundle {
 }
 
 export async function loadLeagueBundle(leagueId: string): Promise<LeagueBundle> {
+  // Chiude la stagione se è scaduta e la lega è in modalità automatica (idempotente; errori ignorati).
+  await supabase.rpc('ensure_season', { p_league: leagueId });
+  void tickLeague(leagueId);   // sfide scadute e aste in scadenza (best effort, max 1 volta al minuto)
   const [leagues, members, professors, teams, teamProfessors, scores, profScores] = await Promise.all([
     rows<League>(supabase.from('leagues').select('*').eq('id', leagueId)),
     rows<Member>(supabase.from('league_members').select('*').eq('league_id', leagueId)),

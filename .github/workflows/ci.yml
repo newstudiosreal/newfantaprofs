@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Test
+        run: npm test
+      - name: Build
+        run: npx vite build
+        env:
+          VITE_SUPABASE_URL: https://ci-placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+
+  sql:
+    # Applica le migrazioni su un Postgres vero e lancia i test SQL della 007.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: postgres }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stub Supabase (ruoli, schema auth, publication)
+        run: |
+          psql -v ON_ERROR_STOP=1 -d postgres -c "create database fp"
+          psql -v ON_ERROR_STOP=1 -d fp <<'SQL'
+          create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;
+          create schema auth; create schema extensions; create schema storage;
+          create extension pgcrypto with schema extensions;
+          grant usage on schema public, auth, extensions to anon, authenticated, service_role;
+          alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+          alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
+          create table auth.users (id uuid primary key default gen_random_uuid(), email text unique, raw_user_meta_data jsonb default '{}', encrypted_password text);
+          create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+          create function auth.role() returns text language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claim.role', true), ''), 'anon') $$;
+          create publication supabase_realtime;
+          create table storage.buckets (id text primary key, name text, public boolean, file_size_limit int, allowed_mime_types text[]);
+          create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text);
+          create function storage.foldername(name text) returns text[] language sql as $$ select string_to_array(name, '/') $$;
+          SQL
+      - name: Migrazioni e test
+        run: |
+          psql -v ON_ERROR_STOP=1 -q -d fp -f supabase/migrations/001_schema.sql
+          # Tabelle della community presenti nel database reale ma non nelle migrazioni del repo
+          psql -v ON_ERROR_STOP=1 -q -d fp <<'SQL'
+          alter table public.profiles add column if not exists verified boolean not null default false;
+          create table public.notifications (id uuid primary key default gen_random_uuid(), user_id uuid not null references public.profiles(id) on delete cascade, type text not null, payload jsonb not null default '{}', read_at timestamptz, created_at timestamptz not null default now());
+          create table public.conversations (id uuid primary key default gen_random_uuid(), created_at timestamptz not null default now());
+          create table public.direct_messages (id uuid primary key default gen_random_uuid(), conversation_id uuid references public.conversations(id) on delete cascade, author_id uuid references public.profiles(id) on delete cascade, body text, created_at timestamptz not null default now(), deleted_at timestamptz);
+          create table public.audit_logs (id uuid primary key default gen_random_uuid(), admin_id uuid, action text not null, target_type text, target_id text, details jsonb default '{}', reason text, created_at timestamptz not null default now());
+          SQL
+          for f in 002_rls 003_functions 004_market_missions 005_season_account 006_game 007_social_admin; do
+            psql -v ON_ERROR_STOP=1 -q -d fp -f supabase/migrations/$f.sql
+          done
+          psql -v ON_ERROR_STOP=1 -q -d fp -f supabase/tests/007_social_admin.sql

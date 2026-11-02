@@ -4,7 +4,9 @@ import { ActionButton, Button, Empty, ErrorState, Field, Loading, Modal, Pts } f
 import { useAsync } from '@/hooks/useAsync';
 import { useAuth } from '@/hooks/useAuth';
 import { createLeague, joinLeague, leagueRanks, listMyLeagues, pendingTradesForMe, teamSpending } from '@/lib/api';
-import { seasonInfo, TEAM_BUDGET, TEAM_MAX_PROFS } from '@/lib/season';
+import { hasRecoveryCode, issueRecoveryCode } from '@/lib/api.account';
+import { seasonInfo, seasonLabel, TEAM_BUDGET, TEAM_MAX_PROFS } from '@/lib/season';
+import { RecoveryCodeModal } from '@/components/RecoveryCodeModal';
 
 const TUTORIAL_KEY = 'fp_tutorial_seen';
 
@@ -20,7 +22,9 @@ async function loadDashboard(userId: string) {
 export function Dashboard() {
   const { profile } = useAuth();
   const nav = useNavigate();
-  const uid = profile!.id;
+  const uid = profile?.id ?? '';
+  const recovery = useAsync(hasRecoveryCode, [uid], { enabled: !!uid });
+  const [freshCode, setFreshCode] = useState<string | null>(null);
   const { data, error, loading, reload } = useAsync(() => loadDashboard(uid), [uid], { interval: 45_000 });
   const [modal, setModal] = useState<'create' | 'join' | 'tutorial' | null>(null);
   const [text, setText] = useState('');
@@ -33,10 +37,16 @@ export function Dashboard() {
 
   return (
     <main className="page">
+      {recovery.data === false && (
+        <div className="card row row-wrap between" style={{ marginBottom: 14 }}>
+          <span className="small"><b>🔑 Non hai un codice di recupero.</b> Se dimentichi la password non potrai rientrare da solo.</span>
+          <ActionButton size="sm" variant="primary" onAction={async () => { setFreshCode(await issueRecoveryCode()); await recovery.reload(); }}>Genera il codice</ActionButton>
+        </div>
+      )}
       <div className="row between row-wrap">
         <div>
           <p className="muted" style={{ margin: 0 }}>Benvenuto,</p>
-          <h1 style={{ fontSize: 'clamp(2.4rem, 9vw, 3.6rem)' }}>{profile!.username} 👋</h1>
+          <h1 style={{ fontSize: 'clamp(2.4rem, 9vw, 3.6rem)' }}>{profile?.username} 👋</h1>
         </div>
         <div className="row">
           <Button onClick={() => setModal('join')}>Entra in una lega</Button>
@@ -63,15 +73,22 @@ export function Dashboard() {
           const table = data.scores.filter(s => s.league_id === lg.id).sort((a, b) => b.score - a.score);
           const pos = my ? table.findIndex(t => t.team_id === my.team_id) + 1 : 0;
           const sp = my ? data.spend[my.team_id] : undefined;
-          const season = seasonInfo(lg.season_start);
+          const season = seasonInfo(lg.season_start, lg.season_num);
+          const emptyTeam = !!my && (sp?.count ?? 0) === 0;
           const pend = data.pending[lg.id] ?? 0;
           return (
             <article key={lg.id} className="card stack">
               <div className="row between">
                 <h3 className="ellipsis">{lg.name}</h3>
-                <span className="badge">{season.active ? `Stagione ${season.num} · ${season.left}g` : `Pausa · ${season.left}g`}</span>
+                <span className="badge">{seasonLabel(season)}</span>
               </div>
               {lg.suspended && <span className="badge badge-neg">Lega sospesa</span>}
+              {emptyTeam && (
+                <Link to={`/leghe/${lg.id}/squadra`} className="badge badge-accent" style={{ alignSelf: 'flex-start' }}>
+                  {season.state === 'pause' ? '🔁 Pausa: ricostruisci la tua squadra' : '🔁 Nuova stagione: ricostruisci la squadra'}
+                </Link>
+              )}
+              {season.state === 'ended' && <span className="badge">Stagione finita: in attesa della chiusura</span>}
               {my ? (
                 <div className="grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', textAlign: 'center' }}>
                   <div><div className="score" style={{ textAlign: 'center' }}>#{pos}<small>POSIZIONE</small></div></div>
@@ -91,6 +108,7 @@ export function Dashboard() {
         })}
       </div>
 
+      {freshCode && <RecoveryCodeModal code={freshCode} onDone={() => setFreshCode(null)} />}
       {modal === 'create' && (
         <Modal title="Crea una lega" onClose={close}>
           <Field label="Nome della lega" hint="Es. 5B Liceo Scientifico">

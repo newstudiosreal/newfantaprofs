@@ -9,13 +9,15 @@ import {
   deleteAnnouncement, deleteLeague, getSetting, listAnnouncements, listMyLeagues, loadLeagueBundle, saveAnnouncement, setAppMode,
 } from '@/lib/api';
 import { fmtDate, fmtDateTime } from '@/lib/format';
+import { BannedWords, ClientErrors } from './SuperAdminExtras';
 import { BADGES, NAME_FX, SKINS } from '@/lib/premium';
 import type { Announcement, DirectMessage, League, Profile, Report, ReportReason, ReportStatus } from '@/lib/types';
 
-type Tab = 'utenti' | 'leghe' | 'codici' | 'news' | 'segnalazioni' | 'punti' | 'audit' | 'sistema';
+type Tab = 'utenti' | 'leghe' | 'codici' | 'news' | 'segnalazioni' | 'punti' | 'audit' | 'parole' | 'errori' | 'sistema';
 const TABS: { id: Tab; label: string }[] = [
   { id: 'utenti', label: 'Utenti' }, { id: 'leghe', label: 'Leghe' }, { id: 'codici', label: 'Codici' }, { id: 'news', label: 'News' },
-  { id: 'segnalazioni', label: 'Segnalazioni' }, { id: 'punti', label: 'Punti & Prof' }, { id: 'audit', label: 'Audit log' }, { id: 'sistema', label: 'Sistema' },
+  { id: 'segnalazioni', label: 'Segnalazioni' }, { id: 'punti', label: 'Punti & Prof' }, { id: 'audit', label: 'Audit log' }, { id: 'parole', label: 'Parole vietate' },
+  { id: 'errori', label: 'Errori app' }, { id: 'sistema', label: 'Sistema' },
 ];
 
 const REASON_LABEL: Record<ReportReason, string> = {
@@ -395,7 +397,7 @@ export default function SuperAdmin() {
         {TABS.map(t => <Button key={t.id} size="sm" variant={tab === t.id ? 'primary' : 'default'} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}>{t.label}</Button>)}
       </div>
       {tab === 'utenti' && <Users />}{tab === 'leghe' && <Leagues />}{tab === 'codici' && <Codes />}{tab === 'news' && <NewsAdmin />}
-      {tab === 'segnalazioni' && <Reports />}{tab === 'punti' && <PointsAndProfessors />}{tab === 'audit' && <Audit />}{tab === 'sistema' && <System />}
+      {tab === 'segnalazioni' && <Reports />}{tab === 'punti' && <PointsAndProfessors />}{tab === 'audit' && <Audit />}{tab === 'parole' && <BannedWords />}{tab === 'errori' && <ClientErrors />}{tab === 'sistema' && <System />}
     </main>
   );
 }

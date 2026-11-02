@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAsync } from '@/hooks/useAsync';
 import { useAuth } from '@/hooks/useAuth';
+import { useRealtime } from '@/hooks/useRealtime';
 import { useTheme } from '@/hooks/useTheme';
+import { describeNotification } from '@/lib/notifications';
 import { listNotifications, markAllNotificationsRead, markNotificationRead, touchPresence, unreadNotificationsCount } from '@/lib/api';
 import { timeAgo } from '@/lib/format';
 import { Avatar, Button, Modal } from './ui';
+import { InstallPrompt } from './InstallPrompt';
 import { IconBell, IconBook, IconHome, IconMoon, IconNews, IconShield, IconSun, IconUser, IconUsers } from './icons';
 
 const NAV = [
@@ -15,22 +18,14 @@ const NAV = [
   { to: '/regole', label: 'Regole', Icon: IconBook },
 ];
 
-function notificationLabel(type: string) {
-  switch (type) {
-    case 'dm': return '💬 Nuovo messaggio';
-    case 'report_status': return '🚩 Segnalazione aggiornata';
-    case 'account_sospeso': return '⛔ Account sospeso';
-    case 'account_riattivato': return '✅ Account riattivato';
-    default: return '🔔 Notifica';
-  }
-}
-
 function Notifications() {
   const { profile } = useAuth();
   const nav = useNavigate();
   const [open, setOpen] = useState(false);
-  const count = useAsync(() => unreadNotificationsCount(profile!.id), [profile!.id], { interval: 30_000 });
+  const count = useAsync(() => unreadNotificationsCount(profile!.id), [profile!.id], { interval: 90_000 });
   const list = useAsync(() => listNotifications(profile!.id), [profile!.id], { enabled: open });
+  // Realtime: il campanello si aggiorna subito; il polling resta come rete di sicurezza.
+  useRealtime([{ table: 'notifications', filter: `user_id=eq.${profile!.id}` }], { onChange: () => { void count.reload(); if (open) void list.reload(); } });
 
   return (
     <>
@@ -47,10 +42,11 @@ function Notifications() {
                 onClick={async () => {
                   await markNotificationRead(n.id);
                   setOpen(false);
-                  if (n.type === 'dm' && n.payload?.conversation_id) nav(`/community/messaggi/${n.payload.conversation_id as string}`);
+                  const to = describeNotification(n).to;
+                  if (to) nav(to);
                   await count.reload();
                 }}>
-                <b className="small">{notificationLabel(n.type)}</b>
+                <b className="small">{describeNotification(n).label}</b>
                 <div className="tiny muted">{timeAgo(n.created_at)}</div>
               </button>
             ))}
@@ -79,6 +75,7 @@ export function AppShell() {
 
   return (
     <>
+      <a className="skip-link" href="#contenuto" onClick={e => { e.preventDefault(); const el = document.getElementById('contenuto'); el?.focus(); el?.scrollIntoView?.(); }}>Vai al contenuto</a>
       <header className="topbar">
         <Link to="/" className="logo" aria-label="FantaProf, home"><i />FANTAPROF</Link>
         <nav className="topnav" aria-label="Principale">
@@ -102,7 +99,8 @@ export function AppShell() {
         )}
       </header>
 
-      <Outlet />
+      <div id="contenuto" tabIndex={-1} style={{ outline: 'none' }}><Outlet /></div>
+      <InstallPrompt />
 
       {session && (
         <nav className="bottomnav" aria-label="Principale mobile">

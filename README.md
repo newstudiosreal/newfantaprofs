@@ -19,7 +19,8 @@ npm test                       # test unitari
 1. Crea un progetto Supabase.
 2. **Authentication → Providers → Email**: disattiva **Confirm email** (gli utenti accedono con username, non con email reali).
 3. **SQL Editor**: esegui in ordine i file di `supabase/migrations/`
-   `001_schema.sql` → `002_rls.sql` → `003_functions.sql` → `004_market_missions.sql`.
+   `001_schema.sql` → `002_rls.sql` → `003_functions.sql` → `004_market_missions.sql` → `005_season_account.sql` → `006_game.sql` → `007_social_admin.sql`.
+   Se il tuo database è già in produzione con le prime quattro, esegui solo 005, 006 e 007 nell'ordine.
 4. Registra il tuo account dall'app, poi promuovilo SuperAdmin (l'unico modo: non si può fare dal client):
    ```sql
    update public.profiles set is_superadmin = true where username = 'IL_TUO_USERNAME';
@@ -78,3 +79,27 @@ scripts/        migrazione V1 → V2
 - Skin lega: colore d'accento scelto e visibile solo da chi la usa (salvato sul dispositivo). Gli effetti nome squadra sono invece pubblici.
 - Modalità app (normale / estate / manutenzione) e Hall of Fame globale si gestiscono dal pannello SuperAdmin.
 - La modalità "timer" della V1 non è stata portata.
+
+## Aggiornamento V2.1
+
+**Fine stagione.** A 30 giorni dall'inizio la classifica finale viene archiviata (tab *Stagioni*, podio incluso), si azzerano punti, mercato, scambi, sfide e pronostici e le squadre restano vuote durante i 3 giorni di pausa: ognuno ricostruisce la propria con 50 crediti. Nome squadra, effetto nome e acquisti premium restano per sempre. In *Gestione → Stagione* l'admin sceglie se la chiusura è automatica (alla prima apertura della lega dopo la scadenza, oppure con pg_cron: vedi `close_due_seasons` nella 005) o manuale. L'Hall of Fame somma anche le stagioni archiviate.
+
+**Recupero password.** Alla registrazione l'app mostra un codice di recupero una sola volta (nel database c'è solo l'hash). Dalla pagina *Password dimenticata?* username + codice → nuova password; il codice si rinnova a ogni uso. Chi era già registrato lo genera da *Profilo → Sicurezza*. Il reset da SuperAdmin resta come ultima spiaggia.
+
+**Novità di gioco.** Classifica con filtri e frecce, grafico punti, sfide 1 contro 1, confronto squadre, missioni giornaliere/settimanali, pronostici di squadra con serie, scambi 2 contro 1 e controfferta, preferiti con notifiche, scheda professore. Admin: permessi dei co-admin, registrazione in blocco, annulla ultima registrazione, proposte dei giocatori, export CSV, invito con link e QR. Chat: risposte, reazioni, messaggio fissato, sondaggi, filtro parole (lista vuota: la gestisce il SuperAdmin). Community: seguiti e feed. Tecnica: realtime, notifiche push, invito a installare l'app, pagina d'errore con segnalazione, FAQ e numeri reali in landing.
+
+### Da fare a mano dopo il deploy
+1. `npm install` (nuova dipendenza `qrcode`).
+2. Edge function (richiedono Supabase CLI):
+   ```bash
+   supabase functions deploy recover-password --no-verify-jwt
+   supabase functions deploy change-username
+   supabase functions deploy admin-reset-password
+   supabase functions deploy send-push --no-verify-jwt   # solo se usi le push
+   ```
+3. Push (facoltative): `npx web-push generate-vapid-keys`, poi `VITE_VAPID_PUBLIC_KEY` nel front-end e i secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `WEBHOOK_SECRET`; crea un Database Webhook su INSERT di `notifications` verso `send-push` con header `x-webhook-secret`. Dettagli in testa a `supabase/functions/send-push/index.ts`.
+4. Realtime: verifica che sia attivo nel progetto (la 007 aggiunge le tabelle alla publication).
+5. Le tabelle della community (`notifications`, `direct_messages`, `audit_logs`, segnalazioni, blocchi) non sono nelle migrazioni 001-004 di questo repo: la V2.1 assume che esistano già nel tuo database, con le colonne usate dal client.
+
+### Test
+`npm test` per i test del front-end. Per l'SQL, in `supabase/tests/` ci sono gli script di verifica (005, 006, 007) da eseguire con `psql` su un database con le migrazioni applicate.

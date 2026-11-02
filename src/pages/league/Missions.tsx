@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PeriodicMissions } from '@/components/game/PeriodicMissions';
 import { ActionButton, Empty, ErrorState, Loading, Modal, Field } from '@/components/ui';
 import { useAsync } from '@/hooks/useAsync';
 import { claimMission, listClaims, listMissions, listTrades, reviewClaim } from '@/lib/api';
@@ -34,6 +35,8 @@ export function Missions() {
 
   return (
     <>
+      <PeriodicMissions leagueId={league.id} onClaimed={reloadLeague} />
+
       {isAdmin && pendingReview.length > 0 && (
         <>
           <div className="section-title" style={{ marginTop: 0 }}><h2>Da approvare</h2><span className="badge badge-accent">{pendingReview.length}</span></div>
@@ -50,7 +53,7 @@ export function Missions() {
         </>
       )}
 
-      <div className="section-title" style={isAdmin && pendingReview.length ? undefined : { marginTop: 0 }}><h2>Missioni</h2></div>
+      <div className="section-title" style={isAdmin && pendingReview.length ? undefined : undefined}><h2>Missioni della lega</h2></div>
       {missions.loading && !missions.data && <Loading />}
       {missions.error != null && <ErrorState error={missions.error} onRetry={missions.reload} />}
       {missions.data && !missions.data.length && <Empty title="Nessuna missione">L'admin può aggiungerne da Gestione.</Empty>}

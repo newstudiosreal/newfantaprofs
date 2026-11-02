@@ -30,7 +30,7 @@ export function Rules() {
         <section className="card"><h3>3. Punti</h3>
           <p className="muted" style={{ margin: 0 }}>Ogni evento (bonus, malus, premio) assegna punti al professore e quindi a tutte le squadre che lo hanno. La classifica somma i punti.</p></section>
         <section className="card"><h3>4. Stagione</h3>
-          <p className="muted" style={{ margin: 0 }}>Ogni stagione dura <b>30 giorni</b>, poi <b>3 giorni di pausa</b>.</p></section>
+          <p className="muted" style={{ margin: 0 }}>Ogni stagione dura <b>30 giorni</b>. Alla fine la classifica finale viene salvata nello storico della lega (tab <b>Stagioni</b>) e <b>tutto riparte da zero</b>: punti, mercato, scambi e pronostici si azzerano e le squadre perdono i professori. Nome della squadra, effetti e acquisti premium restano. Durante i <b>3 giorni di pausa</b> puoi già ricostruire la squadra con 50 crediti. L'admin può scegliere se la chiusura è automatica o manuale.</p></section>
         <section className="card"><h3>5. Mercato</h3>
           <p className="muted">Con i punti guadagnati puoi comprare professori da annunci e aste (12 ore), dalla vetrina a rotazione (offerte ogni 48 ore) e dal negozio.</p>
           <ul style={{ margin: 0, paddingLeft: 18 }}>

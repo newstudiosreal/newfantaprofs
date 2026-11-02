@@ -8,11 +8,13 @@ import {
 import { explain, needsDrop } from '@/lib/errors';
 import { timeLeft } from '@/lib/format';
 import { SHOP } from '@/lib/premium';
+import { WatchStar } from '@/components/game/WatchStar';
+import { useWatchlist } from '@/components/game/useWatchlist';
 import { useLeague } from './context';
 
-type Tab = 'vetrina' | 'annunci' | 'negozio' | 'miei' | 'vendi';
+type Tab = 'vetrina' | 'annunci' | 'preferiti' | 'negozio' | 'miei' | 'vendi';
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'vetrina', label: 'Vetrina' }, { id: 'annunci', label: 'Annunci' }, { id: 'negozio', label: 'Negozio' },
+  { id: 'vetrina', label: 'Vetrina' }, { id: 'annunci', label: 'Annunci' }, { id: 'preferiti', label: '★ Preferiti' }, { id: 'negozio', label: 'Negozio' },
   { id: 'miei', label: 'I miei' }, { id: 'vendi', label: 'Vendi' },
 ];
 
@@ -25,6 +27,7 @@ export function Market() {
   const rotations = useAsync(() => listRotations(league.id), [league.id], { interval: 60_000, enabled: !!myTeam });
   const powerups = useAsync(() => listPowerups(league.id, meId), [league.id, meId], { enabled: !!myTeam });
   const [drop, setDrop] = useState<((dropId: string) => Promise<unknown>) | null>(null);
+  const watch = useWatchlist(league.id, meId);
 
   const refresh = async () => { await Promise.all([listings.reload(), rotations.reload(), powerups.reload(), reloadLeague()]); };
 
@@ -67,7 +70,7 @@ export function Market() {
               return (
                 <div key={r.id} className="prof-card" style={taken ? { opacity: .55 } : undefined}>
                   <div className="row"><span className="prof-photo" aria-hidden="true">{p?.name[0]}</span>
-                    <span className="grow"><b>{p?.name}</b><div className="muted small">{p?.subject || '—'}</div></span><span className="badge badge-accent">Offerta</span></div>
+                    <span className="grow"><b>{p?.name}</b><div className="muted small">{p?.subject || '—'}</div></span><WatchStar on={watch.ids.has(r.professor_id)} onToggle={() => void watch.toggle(r.professor_id)} name={p?.name ?? 'prof'} /><span className="badge badge-accent">Offerta</span></div>
                   <div className="row between"><span className="pts">{r.price} pt</span>
                     {taken ? <span className="badge">{r.bought_by === meId ? 'Già tuo' : `Preso da ${userById(r.bought_by!)?.username ?? '?'}`}</span>
                       : <ActionButton variant="primary" size="sm" disabled={!canPay} okMessage="Acquistato!" onAction={withDrop(d => buyRotating(r.id, d))}>{canPay ? 'Acquista' : `Servono ${r.price} pt`}</ActionButton>}
@@ -88,12 +91,33 @@ export function Market() {
               const price = l.type === 'direct' ? l.price! : (l.current_bid ?? l.min_bid!);
               return (
                 <div key={l.id} className="card">
-                  <div className="row between"><b>{profName(l.professor_id)}</b><span className="badge">{l.type === 'auction' ? 'Asta' : 'Diretto'}</span></div>
+                  <div className="row between"><b>{profName(l.professor_id)}</b><span className="row"><WatchStar on={watch.ids.has(l.professor_id)} onToggle={() => void watch.toggle(l.professor_id)} name={profName(l.professor_id)} /><span className="badge">{l.type === 'auction' ? 'Asta' : 'Diretto'}</span></span></div>
                   <p className="muted small" style={{ margin: '2px 0 8px' }}>{profById(l.professor_id)?.subject || '—'} · venditore {userById(l.seller_id)?.username ?? '?'}</p>
                   {l.type === 'direct' ? (
                     <div className="row between"><span className="pts">{price} pt</span>
                       <ActionButton variant="primary" size="sm" disabled={myScore < price} okMessage="Acquistato!" onAction={withDrop(d => buyListing(l.id, d))}>{myScore < price ? 'Punti insufficienti' : 'Compra'}</ActionButton></div>
                   ) : <AuctionRow l={l} myScore={myScore} meId={meId} refresh={refresh} bidderName={l.current_bidder ? userById(l.current_bidder)?.username : undefined} />}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {tab === 'preferiti' && (
+        <>
+          <p className="muted small">Ti avviso quando uno dei tuoi preferiti va in vendita, all'asta o in vetrina. Aggiungili con la ☆ nel mercato o nella scheda del professore.</p>
+          {!watch.ids.size && <Empty title="Nessun preferito">Tocca la ☆ accanto a un professore per seguirlo.</Empty>}
+          <div className="stack">
+            {[...watch.ids].map(id => {
+              const p = profById(id);
+              const listing = open.find(l => l.professor_id === id);
+              const slot = (rotations.data ?? []).find(r => r.professor_id === id && !r.bought_by);
+              return (
+                <div key={id} className="card row">
+                  <span className="grow" style={{ minWidth: 0 }}><b>{p?.name ?? '?'}</b><div className="muted small">{p?.subject || '—'} · {p?.cost ?? '?'} crediti</div></span>
+                  <span className="badge">{listing ? (listing.type === 'auction' ? `Asta ${listing.current_bid ?? listing.min_bid} pt` : `In vendita ${listing.price} pt`) : slot ? `Vetrina ${slot.price} pt` : 'Non in vendita'}</span>
+                  <WatchStar on onToggle={() => void watch.toggle(id)} name={p?.name ?? 'prof'} />
                 </div>
               );
             })}

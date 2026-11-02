@@ -3,17 +3,19 @@ import { Link } from 'react-router-dom';
 import { ActionButton, Button, Empty, Field, Pts, TeamName } from '@/components/ui';
 import { useAsync } from '@/hooks/useAsync';
 import { useAuth } from '@/hooks/useAuth';
+import { rebuildTeam } from '@/lib/api.account';
 import { createTeam, listEntitlements, listEvents, listPowerups, renameTeam, setCaptain, setTeamFx } from '@/lib/api';
 import { timeAgo, timeLeft } from '@/lib/format';
 import { NAME_FX } from '@/lib/premium';
-import { TEAM_BUDGET, TEAM_MAX_PROFS, validateSelection } from '@/lib/season';
+import { seasonInfo, TEAM_BUDGET, TEAM_MAX_PROFS, validateSelection } from '@/lib/season';
+import type { Team } from '@/lib/types';
 import { useLeague } from './context';
 
-function TeamBuilder() {
+function TeamBuilder({ rebuild }: { rebuild?: Team }) {
   const { bundle, reload } = useLeague();
   const { professors, league } = bundle;
   const [picked, setPicked] = useState<string[]>([]);
-  const [name, setName] = useState('');
+  const [name, setName] = useState(rebuild?.name ?? '');
   const costOf = (id: string) => professors.find(p => p.id === id)?.cost ?? 0;
   const spent = picked.reduce((s, id) => s + costOf(id), 0);
   const problem = validateSelection(picked.map(costOf));
@@ -32,7 +34,9 @@ function TeamBuilder() {
   return (
     <>
       <div className="card">
-        <Field label="Nome della squadra"><input className="input" value={name} maxLength={30} onChange={e => setName(e.target.value)} /></Field>
+        {rebuild
+          ? <p className="small" style={{ margin: '0 0 8px' }}>Squadra <b>{rebuild.name}</b>: il nome e gli effetti restano, scegli i professori della nuova stagione.</p>
+          : <Field label="Nome della squadra"><input className="input" value={name} maxLength={30} onChange={e => setName(e.target.value)} /></Field>}
         <div className="row between small bold"><span>Crediti spesi</span><span>{spent} / {TEAM_BUDGET}</span></div>
         <div className={`budget ${over ? 'over' : ''}`} style={{ margin: '6px 0' }}><i style={{ width: `${Math.min(100, (spent / TEAM_BUDGET) * 100)}%` }} /></div>
         <div className="row between tiny muted"><span>{picked.length}/{TEAM_MAX_PROFS} professori</span><span>{over ? 'Budget superato' : `${TEAM_BUDGET - spent} crediti liberi`}</span></div>
@@ -53,8 +57,9 @@ function TeamBuilder() {
       </div>
       <div style={{ position: 'sticky', bottom: 'calc(var(--nav-h) + 8px)', marginTop: 16 }}>
         <ActionButton variant="primary" size="lg" block disabled={!!problem || name.trim().length < 2}
-          okMessage="Squadra creata!" onAction={async () => { await createTeam(league.id, name.trim(), picked); await reload(); }}>
-          {problem ?? (name.trim().length < 2 ? 'Dai un nome alla squadra' : 'Crea squadra')}
+          okMessage={rebuild ? 'Squadra ricostruita!' : 'Squadra creata!'}
+          onAction={async () => { if (rebuild) await rebuildTeam(rebuild.id, picked); else await createTeam(league.id, name.trim(), picked); await reload(); }}>
+          {problem ?? (name.trim().length < 2 ? 'Dai un nome alla squadra' : rebuild ? 'Ricostruisci la squadra' : 'Crea squadra')}
         </ActionButton>
       </div>
     </>
@@ -76,6 +81,18 @@ export function MyTeam() {
   const spent = profs.reduce((s, p) => s + p.cost, 0);
 
   if (!myTeam) return (<><div className="section-title" style={{ marginTop: 0 }}><h2>Crea la tua squadra</h2></div><TeamBuilder /></>);
+  if (!profs.length && myScore === 0) {
+    const st = seasonInfo(league.season_start, league.season_num).state;
+    return (
+      <>
+        <div className="section-title" style={{ marginTop: 0 }}>
+          <h2>{st === 'pause' ? 'Pausa: ricostruisci la squadra' : 'Ricostruisci la tua squadra'}</h2>
+        </div>
+        <p className="muted small">Una nuova stagione riparte da zero: stessi 50 crediti e massimo {TEAM_MAX_PROFS} professori.</p>
+        <TeamBuilder rebuild={myTeam} />
+      </>
+    );
+  }
 
   return (
     <>

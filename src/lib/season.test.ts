@@ -1,22 +1,28 @@
 import { describe, expect, it } from 'vitest';
-import { seasonInfo, validateSelection } from './season';
+import { seasonInfo, seasonLabel, validateSelection } from './season';
 import { explain, needsDrop } from './errors';
 import { timeLeft, fmtPts } from './format';
 
 describe('seasonInfo', () => {
   const start = '2026-09-01T00:00:00Z';
   const day = 86_400_000;
+  const at = (d: number) => new Date(start).getTime() + d * day;
   it('è attiva nei primi 30 giorni', () => {
-    const s = seasonInfo(start, new Date(start).getTime() + 5 * day);
-    expect(s.active).toBe(true); expect(s.left).toBe(25); expect(s.num).toBe(1);
+    const s = seasonInfo(start, 3, at(5));
+    expect(s.state).toBe('active'); expect(s.active).toBe(true); expect(s.left).toBe(25); expect(s.num).toBe(3);
   });
-  it('entra in pausa dopo 30 giorni', () => {
-    const s = seasonInfo(start, new Date(start).getTime() + 31 * day);
-    expect(s.active).toBe(false); expect(s.left).toBe(2);
+  it('è finita dopo 30 giorni se nessuno l\'ha ancora chiusa', () => {
+    const s = seasonInfo(start, 1, at(31));
+    expect(s.state).toBe('ended'); expect(s.active).toBe(false); expect(s.left).toBe(0);
   });
-  it('passa alla stagione 2 dopo 33 giorni', () => {
-    const s = seasonInfo(start, new Date(start).getTime() + 34 * day);
-    expect(s.num).toBe(2); expect(s.active).toBe(true);
+  it('in pausa quando season_start è nel futuro', () => {
+    const s = seasonInfo(start, 2, at(-2));
+    expect(s.state).toBe('pause'); expect(s.left).toBe(2); expect(s.num).toBe(2);
+  });
+  it('label leggibili', () => {
+    expect(seasonLabel(seasonInfo(start, 1, at(5)))).toBe('Stagione 1 · 25g');
+    expect(seasonLabel(seasonInfo(start, 2, at(-1)))).toMatch(/Pausa/);
+    expect(seasonLabel(seasonInfo(start, 1, at(40)))).toMatch(/finita/);
   });
 });
 

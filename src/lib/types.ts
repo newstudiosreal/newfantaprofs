@@ -51,6 +51,12 @@ export interface League {
   malus: CatalogEvent[];
   premi: CatalogEvent[];
   missions_enabled: boolean;
+  /** Numero della stagione corrente (o imminente, se season_start è nel futuro durante la pausa). */
+  season_num: number;
+  /** true = a fine stagione la lega si chiude da sola; false = la chiude un admin dalle impostazioni. */
+  auto_season_end: boolean;
+  /** Permessi dei co-admin (chiavi: events, members, missions). */
+  coadmin_perms: { events?: boolean; members?: boolean; missions?: boolean };
   created_at: string;
 }
 
@@ -69,10 +75,13 @@ export interface GameEvent {
   event_key: string; label: string; kind: EventKind; pts: number; created_by: string | null; created_at: string;
 }
 
-export type TradeStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'expired';
+export type TradeStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'expired' | 'countered';
 export interface Trade {
   id: string; league_id: string; from_user: string; to_user: string; from_prof: string; to_prof: string;
   status: TradeStatus; created_at: string; expires_at: string;
+  /** Scambi 2 contro 1: secondo prof per lato (null = scambio 1 a 1). */
+  from_prof2?: string | null; to_prof2?: string | null;
+  counter_of?: string | null; decided_at?: string | null;
 }
 
 export interface Message { id: string; league_id: string; author_id: string; body: string; created_at: string }
@@ -97,7 +106,7 @@ export interface Listing {
 }
 export interface Rotation { id: string; league_id: string; professor_id: string; price: number; bought_by: string | null; batch_at: string }
 export interface Powerup { id: string; league_id: string; team_id: string; user_id: string; kind: 'shield' | 'multiplier'; expires_at: string | null; used_at: string | null; created_at: string }
-export interface Forecast { league_id: string; user_id: string; week_start: string; professor_id: string; resolved: boolean }
+export interface Forecast { league_id: string; user_id: string; week_start: string; professor_id: string; resolved: boolean; won?: boolean | null }
 export interface Entitlement { id: string; user_id: string; kind: 'pro' | 'skin' | 'badge' | 'name_fx' | 'custom_badge'; ref: string }
 export interface HofRow { user_id: string; username: string; avatar: string; avatar_url: string | null; total: number; leagues: number }
 export interface PremiumCode { code: string; type: string; meta: Record<string, string>; used_by: string | null; used_at: string | null; created_at: string }

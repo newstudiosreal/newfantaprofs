@@ -5,6 +5,7 @@ import { listMyConversations } from '@/lib/api';
 import { Search } from './Search';
 import { Conversations } from './Conversations';
 import { Thread } from './Thread';
+import { Following } from './Following';
 
 export default function CommunityLayout() {
   const { profile } = useAuth();
@@ -16,6 +17,7 @@ export default function CommunityLayout() {
     <>
       <div className="tabs" role="tablist" aria-label="Community">
         <NavLink to="" end className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>Cerca</NavLink>
+        <NavLink to="seguiti" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>Seguiti</NavLink>
         <NavLink to="messaggi" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
           Messaggi{unread > 0 ? <span className="dot">{unread > 9 ? '9+' : unread}</span> : null}
         </NavLink>
@@ -25,6 +27,7 @@ export default function CommunityLayout() {
           <Route index element={<Search />} />
           <Route path="messaggi" element={<Conversations data={convs.data} loading={convs.loading} error={convs.error} onReload={convs.reload} />} />
           <Route path="messaggi/:id" element={<Thread />} />
+          <Route path="seguiti" element={<Following />} />
           <Route path="*" element={<p className="muted">Sezione non trovata.</p>} />
         </Routes>
       </main>
