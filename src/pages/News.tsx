@@ -4,6 +4,23 @@ import { useAsync } from '@/hooks/useAsync';
 import { listAnnouncements } from '@/lib/api';
 import { fmtDate } from '@/lib/format';
 
+const URL_RE = /(https?:\/\/[^\s<>"']+)/g;
+
+/** Testo con link http(s) cliccabili; il resto resta testo semplice (nessun HTML). */
+function Linkified({ text }: { text: string }) {
+  return (
+    <>
+      {text.split(URL_RE).map((part, i) => {
+        if (i % 2 === 0) return part;
+        const m = part.match(/^(.*?)([.,;:!?)]*)$/);
+        const url = m ? m[1] : part;
+        const tail = m ? m[2] : '';
+        return <span key={i}><a href={url} target="_blank" rel="noopener noreferrer" className="bold">{url}</a>{tail}</span>;
+      })}
+    </>
+  );
+}
+
 export const NEWS_SEEN_KEY = 'fp_news_seen';
 
 export function News() {
@@ -26,7 +43,7 @@ export function News() {
               {a.tag && <span className="badge badge-accent">{a.tag}</span>}
             </div>
             <p className="muted tiny" style={{ margin: '4px 0 10px' }}>{fmtDate(a.created_at)}</p>
-            <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{a.body}</p>
+            <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', margin: 0 }}><Linkified text={a.body} /></p>
           </article>
         ))}
       </div>
