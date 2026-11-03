@@ -11,14 +11,14 @@ import type { Profile } from '@/lib/types';
 
 const COOLDOWN_MS = 30 * 86_400_000;
 
-/** Profilo → Sicurezza: password, codice di recupero, username, sessioni. */
+/** Profilo → Sicurezza: password, codice di recupero, username. */
 export function SecuritySection({ profile }: { profile: Profile & { username_changed_at?: string | null } }) {
-  const { signOut, signOutScope, changePassword, refreshProfile } = useAuth();
+  const { signOut, changePassword, refreshProfile } = useAuth();
   const nav = useNavigate();
   const [pw, setPw] = useState('');
   const [newName, setNewName] = useState('');
   const [code, setCode] = useState<string | null>(null);
-  const [confirm, setConfirm] = useState<'regen' | 'all' | 'others' | null>(null);
+  const [confirm, setConfirm] = useState<'regen' | null>(null);
   const has = useAsync(hasRecoveryCode, [profile.id]);
 
   const nextChange = profile.username_changed_at ? new Date(new Date(profile.username_changed_at).getTime() + COOLDOWN_MS) : null;
@@ -59,22 +59,9 @@ export function SecuritySection({ profile }: { profile: Profile & { username_cha
         </div>
       </div>
 
-      <div className="card stack" style={{ marginTop: 12 }}>
-        <h3>Dispositivi</h3>
-        <p className="muted small" style={{ margin: 0 }}>Se hai usato un computer che non è tuo, esci da tutti i dispositivi.</p>
-        <div className="row row-wrap">
-          <ActionButton onAction={async () => { setConfirm('others'); }}>Esci dagli altri dispositivi</ActionButton>
-          <ActionButton variant="danger" onAction={async () => { setConfirm('all'); }}>Esci da tutti i dispositivi</ActionButton>
-        </div>
-      </div>
-
       {code && <RecoveryCodeModal code={code} onDone={() => setCode(null)} />}
       {confirm === 'regen' && <ConfirmModal title="Generare un nuovo codice?" confirmLabel="Genera" text="Il codice attuale smette di funzionare. Il nuovo ti verrà mostrato una sola volta."
         onConfirm={async () => { setCode(await issueRecoveryCode()); await has.reload(); }} onClose={() => setConfirm(null)} />}
-      {confirm === 'others' && <ConfirmModal title="Uscire dagli altri dispositivi?" confirmLabel="Esci dagli altri" text="Questo dispositivo resta collegato; tutti gli altri dovranno rifare l'accesso."
-        onConfirm={async () => { await signOutScope('others'); }} onClose={() => setConfirm(null)} />}
-      {confirm === 'all' && <ConfirmModal danger title="Uscire da tutti i dispositivi?" confirmLabel="Esci da tutti" text="Verrai disconnesso anche da questo dispositivo."
-        onConfirm={async () => { await signOutScope('global'); nav('/', { replace: true }); }} onClose={() => setConfirm(null)} />}
     </>
   );
 }

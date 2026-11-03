@@ -30,6 +30,14 @@ const DEFS: Record<string, (p: P) => NotificationView> = {
   trade_accepted: p => ({ label: '✅ Scambio accettato', to: league(p, 'scambi') }),
   trade_rejected: p => ({ label: '❌ Scambio rifiutato', to: league(p, 'scambi') }),
   trade_countered: p => ({ label: '↩️ Controfferta ricevuta', to: league(p, 'scambi') }),
+  // ── news, risposte, sondaggi, modalità app (D) ──
+  chat_reply: p => ({ label: `↩️ ${s(p.from) || 'Qualcuno'} ha risposto al tuo messaggio`, to: league(p, 'chat') }),
+  poll_new: p => ({ label: `📊 Nuovo sondaggio${s(p.question) ? `: ${s(p.question)}` : ''}`, to: league(p, 'chat') }),
+  news: p => ({ label: `📰 Novità${s(p.title) ? `: ${s(p.title)}` : ''}`, to: '/news' }),
+  app_mode: p => ({
+    label: s(p.mode) === 'maintenance' ? '🛠️ L\'app va in manutenzione' : s(p.mode) === 'estate' ? '☀️ L\'app va in pausa estiva' : '✅ L\'app è di nuovo online',
+    to: '/',
+  }),
   // ── admin, chat, community (C) ──
   proposal_new: p => ({ label: `📝 Nuova proposta${s(p.event) ? `: ${s(p.event)}` : ''}`, to: league(p, 'proposte') }),
   proposal_approved: p => ({ label: `✅ Proposta approvata${s(p.event) ? `: ${s(p.event)}` : ''}`, to: league(p, 'proposte') }),

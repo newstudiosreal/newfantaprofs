@@ -41,6 +41,14 @@ function describe(type: string, p: Record<string, unknown>): { title: string; bo
     case 'duel_declined': return { title: '🙅 Sfida rifiutata', body: 'L\'avversario ha rifiutato.', url: lg('sfide') };
     case 'duel_finished': return { title: '🏁 Sfida conclusa', body: 'Guarda com\'è finita.', url: lg('sfide') };
     case 'season_closed': return { title: '🏁 Stagione conclusa', body: 'Guarda il podio e rifai la tua squadra.', url: lg('stagioni') };
+    case 'chat_reply': return { title: `↩️ ${str(p.from) || 'Qualcuno'} ti ha risposto`, body: str(p.preview) || 'Ha risposto al tuo messaggio in chat.', url: lg('chat') };
+    case 'poll_new': return { title: '📊 Nuovo sondaggio', body: str(p.question) || 'Vota nel sondaggio della tua lega.', url: lg('chat') };
+    case 'news': return { title: '📰 Novità su FantaProf', body: str(p.title) || 'C\'è una nuova news.', url: '/news' };
+    case 'app_mode': return str(p.mode) === 'maintenance'
+      ? { title: '🛠️ Manutenzione', body: 'L\'app va in manutenzione: tornerà presto.', url: '/' }
+      : str(p.mode) === 'estate'
+        ? { title: '☀️ Pausa estiva', body: 'FantaProf va in pausa estiva.', url: '/' }
+        : { title: '✅ FantaProf è di nuovo online', body: 'La manutenzione è finita, puoi tornare a giocare.', url: '/' };
     case 'account_sospeso': return { title: '⛔ Account sospeso', body: 'Il tuo account è stato sospeso.', url: '/' };
     case 'account_riattivato': return { title: '✅ Account riattivato', body: 'Puoi tornare a giocare.', url: '/' };
     default: return { title: 'FantaProf', body: 'Hai una nuova notifica.', url: '/' };
