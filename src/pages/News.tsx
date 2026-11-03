@@ -1,33 +1,9 @@
 import { useEffect } from 'react';
+import { RichText } from '@/components/RichText';
 import { Empty, ErrorState, Loading } from '@/components/ui';
 import { useAsync } from '@/hooks/useAsync';
 import { listAnnouncements } from '@/lib/api';
 import { fmtDate } from '@/lib/format';
-
-// [testo del link](https://indirizzo)  oppure un indirizzo http(s) semplice.
-const LINK_RE = /\[([^\]\n]{1,80})\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<>"']+)/g;
-const linkStyle = { color: '#3b8eea', textDecoration: 'underline', fontWeight: 700, overflowWrap: 'anywhere' as const };
-
-/** Testo con link cliccabili (solo http/https); il resto resta testo semplice, nessun HTML. */
-function Linkified({ text }: { text: string }) {
-  const out: (string | JSX.Element)[] = [];
-  let last = 0;
-  for (const m of text.matchAll(LINK_RE)) {
-    const at = m.index ?? 0;
-    if (at > last) out.push(text.slice(last, at));
-    if (m[2]) {
-      out.push(<a key={at} href={m[2]} target="_blank" rel="noopener noreferrer" style={linkStyle}>{m[1]}</a>);
-    } else {
-      const bare = m[3].match(/^(.*?)([.,;:!?)]*)$/);
-      const url = bare ? bare[1] : m[3];
-      const tail = bare ? bare[2] : '';
-      out.push(<span key={at}><a href={url} target="_blank" rel="noopener noreferrer" style={linkStyle}>{url}</a>{tail}</span>);
-    }
-    last = at + m[0].length;
-  }
-  if (last < text.length) out.push(text.slice(last));
-  return <>{out}</>;
-}
 
 export const NEWS_SEEN_KEY = 'fp_news_seen';
 
@@ -51,7 +27,7 @@ export function News() {
               {a.tag && <span className="badge badge-accent">{a.tag}</span>}
             </div>
             <p className="muted tiny" style={{ margin: '4px 0 10px' }}>{fmtDate(a.created_at)}</p>
-            <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', margin: 0 }}><Linkified text={a.body} /></p>
+            <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', margin: 0 }}><RichText text={a.body} /></p>
           </article>
         ))}
       </div>
