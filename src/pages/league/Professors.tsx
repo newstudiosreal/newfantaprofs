@@ -2,28 +2,19 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { WatchStar } from '@/components/game/WatchStar';
 import { useWatchlist } from '@/components/game/useWatchlist';
-import { ActionButton, Button, ConfirmModal, Empty, Field, Modal, Pts, Select } from '@/components/ui';
-import { addProfessors, deleteProfessor } from '@/lib/api';
+import { Button, ConfirmModal, Empty, Pts, Select } from '@/components/ui';
+import { deleteProfessor } from '@/lib/api';
 import { filterProfessors, type ProfFilter } from '@/lib/game';
 import type { Professor } from '@/lib/types';
 import { useLeague } from './context';
-
-/** Formato: una riga per prof, "Nome; Materia; Costo". La materia è facoltativa: "Rossi; 12". */
-export function parseProfLines(text: string): { name: string; subject: string; cost: number }[] {
-  return text.split('\n').map(l => l.trim()).filter(Boolean).map(line => {
-    const parts = line.split(/[;,\t]/).map(s => s.trim());
-    const cost = Number(parts[parts.length - 1]);
-    if (parts.length < 2 || !Number.isInteger(cost) || cost < 1 || cost > 50) throw new Error(`Riga non valida: "${line}" (serve un costo da 1 a 50)`);
-    return { name: parts[0], subject: parts.length > 2 ? parts[1] : '', cost };
-  });
-}
+import { AddProfessorsModal, EditProfessorsModal } from './ProfessorManager';
 
 export function Professors() {
   const { bundle, isAdmin, reload, meId } = useLeague();
   const { professors, profScores, league, teamProfessors } = bundle;
   const [f, setF] = useState<ProfFilter>({ q: '', subject: '', cost: 'all', owned: 'all', sort: 'punti' });
   const [adding, setAdding] = useState(false);
-  const [lines, setLines] = useState('');
+  const [editing, setEditing] = useState<string | null>(null); // testo di ricerca iniziale
   const [del, setDel] = useState<Professor | null>(null);
   const watch = useWatchlist(league.id, meId);
   const set = <K extends keyof ProfFilter>(k: K, v: ProfFilter[K]) => setF(cur => ({ ...cur, [k]: v }));
@@ -42,7 +33,12 @@ export function Professors() {
     <>
       <div className="row between row-wrap" style={{ marginBottom: 12 }}>
         <input className="input" style={{ maxWidth: 320 }} placeholder="Cerca per nome o materia" value={f.q} onChange={e => set('q', e.target.value)} aria-label="Cerca professori" />
-        {isAdmin && <Button variant="primary" onClick={() => setAdding(true)}>Aggiungi professori</Button>}
+        {isAdmin && (
+          <div className="row" style={{ gap: 8 }}>
+            {professors.length > 0 && <Button onClick={() => setEditing('')}>Modifica</Button>}
+            <Button variant="primary" onClick={() => setAdding(true)}>Aggiungi professori</Button>
+          </div>
+        )}
       </div>
       <div className="filters">
         <Select value={f.sort} onChange={v => set('sort', v as ProfFilter['sort'])} aria-label="Ordina per">
@@ -74,7 +70,12 @@ export function Professors() {
                 <span className="cost">{p.cost}<small>CREDITI</small></span>
                 <span style={{ textAlign: 'right' }}><Pts value={pts[p.id] ?? 0} /><div className="tiny muted">in {n} {n === 1 ? 'squadra' : 'squadre'}</div></span>
               </div>
-              {isAdmin && <Button size="sm" variant="danger" onClick={() => setDel(p)}>Rimuovi dalla lega</Button>}
+              {isAdmin && (
+                <div className="row" style={{ gap: 8 }}>
+                  <Button size="sm" onClick={() => setEditing(p.name)}>Modifica</Button>
+                  <Button size="sm" variant="danger" onClick={() => setDel(p)}>Rimuovi dalla lega</Button>
+                </div>
+              )}
             </div>
           );
         })}
@@ -83,15 +84,8 @@ export function Professors() {
       {del && <ConfirmModal danger title={`Rimuovere ${del.name}?`} confirmLabel="Rimuovi"
         text="Il professore esce da tutte le squadre e i suoi eventi vengono cancellati. Non si può annullare."
         onConfirm={async () => { await deleteProfessor(del.id); await reload(); }} onClose={() => setDel(null)} />}
-      {adding && (
-        <Modal title="Aggiungi professori" onClose={() => setAdding(false)}>
-          <Field label="Un professore per riga" hint="Formato: Nome; Materia; Costo (1-50). Esempio: Mario Rossi; Matematica; 12">
-            <textarea className="input" rows={7} value={lines} onChange={e => setLines(e.target.value)} placeholder={'Mario Rossi; Matematica; 12\nAnna Verdi; Italiano; 8'} autoFocus />
-          </Field>
-          <ActionButton variant="primary" block disabled={!lines.trim()} okMessage="Professori aggiunti"
-            onAction={async () => { await addProfessors(league.id, parseProfLines(lines)); setLines(''); setAdding(false); await reload(); }}>Aggiungi</ActionButton>
-        </Modal>
-      )}
+      {adding && <AddProfessorsModal leagueId={league.id} existing={professors} onClose={() => setAdding(false)} onDone={reload} />}
+      {editing !== null && <EditProfessorsModal leagueId={league.id} professors={professors} owners={owners} initialQuery={editing} onClose={() => setEditing(null)} onDone={reload} />}
     </>
   );
 }
