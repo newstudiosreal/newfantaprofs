@@ -1,0 +1,161 @@
+/* FantaProf Token — animazione di ritrovamento e interfacce collegate.
+   Convenzione: lo stile base è lo STATO FINALE e i keyframes descrivono solo la partenza ("from"),
+   così con prefers-reduced-motion (animazioni disattivate in app.css) si vede subito il risultato. */
+
+:root { --tk-gold: #ffd24a; --tk-gold-2: #ffb300; --tk-gold-3: #8a5a00; --tk-cream: #fff4cf; --tk-night: #030605; }
+
+/* ── Overlay ─────────────────────────────────────────────── */
+.tk-root {
+  position: fixed; inset: 0; z-index: 100; overflow: hidden; color: var(--tk-cream);
+  background: radial-gradient(circle at 50% 45%, #10201a 0%, var(--tk-night) 72%);
+  animation: tk-dim 1.4s ease-out;
+  --cw: min(64vw, 280px);
+}
+@keyframes tk-dim { from { background: transparent; } }
+.tk-vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 45%, transparent 0%, rgba(0, 0, 0, .8) 100%); }
+.tk-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 4; }
+
+.tk-whisper { position: absolute; inset: 0; display: grid; place-content: center; gap: 12px; margin: 0; padding: 0 28px; text-align: center; pointer-events: none; z-index: 5; }
+.tk-whisper span { font-family: var(--font-display); font-size: clamp(1.7rem, 6.6vw, 2.9rem); letter-spacing: .08em; line-height: 1.1; color: #f7efd0; text-shadow: 0 0 24px rgba(255, 200, 80, .65); opacity: 0; transition: opacity 1.5s ease; }
+.is-mystery .tk-w1 { opacity: 1; }
+.is-mystery .tk-w2 { opacity: 1; transition-delay: 1.5s; }
+.is-chest .tk-whisper span { opacity: 0; transition-delay: 0s; transition-duration: .9s; }
+
+/* ── Layout ──────────────────────────────────────────────── */
+.tk-center { position: relative; z-index: 3; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 56px 16px calc(24px + env(safe-area-inset-bottom)); }
+@supports (height: 100dvh) { .tk-center { height: 100dvh; } }
+.tk-stage { position: relative; width: min(100%, 440px); height: min(48dvh, 370px); flex: none; }
+@supports not (height: 1dvh) { .tk-stage { height: min(48vh, 370px); } }
+
+/* ── Raggi di luce ───────────────────────────────────────── */
+.tk-rays {
+  position: absolute; left: 50%; top: 50%; width: 170vmax; height: 170vmax; margin: -85vmax 0 0 -85vmax; pointer-events: none; opacity: 0;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 214, 90, 0) 0 7deg, rgba(255, 214, 90, .17) 7deg 13deg);
+  -webkit-mask-image: radial-gradient(circle, #000 0, transparent 34%); mask-image: radial-gradient(circle, #000 0, transparent 34%);
+  transition: opacity 1.8s ease; animation: tk-rotate 46s linear infinite;
+}
+.is-open .tk-rays { opacity: .55; }
+.is-burst .tk-rays { opacity: 1; }
+@keyframes tk-rotate { to { transform: rotate(360deg); } }
+
+/* ── Forziere ────────────────────────────────────────────── */
+.tk-chest { position: absolute; left: 50%; bottom: 4%; width: var(--cw); height: calc(var(--cw) * .78); margin-left: calc(var(--cw) / -2); z-index: 2; transition: transform 1.7s cubic-bezier(.2, .8, .2, 1), opacity 1.4s ease, filter 1.2s ease; }
+.tk-chest { transform: translateY(70px) scale(.82); opacity: 0; }
+.is-chest .tk-chest { transform: none; opacity: 1; }
+.is-reveal .tk-chest { transform: translateY(26px) scale(.94); opacity: .5; filter: saturate(.7) brightness(.8); }
+.tk-chest-glow { position: absolute; inset: -45%; background: radial-gradient(circle, rgba(255, 200, 60, .38), transparent 60%); opacity: 0; transition: opacity 1.6s ease; pointer-events: none; }
+.is-chest .tk-chest-glow { opacity: .55; animation: tk-pulse 2.4s ease-in-out infinite; }
+.is-open .tk-chest-glow { opacity: 1; }
+@keyframes tk-pulse { 50% { transform: scale(1.12); } }
+.tk-chest-3d { position: absolute; inset: 0; perspective: 820px; perspective-origin: 50% -70%; }
+.is-chest:not(.is-open) .tk-chest-3d { animation: tk-tremble .2s linear infinite; }
+@keyframes tk-tremble { 25% { transform: translate(1.5px, -1px) rotate(.4deg); } 75% { transform: translate(-1.5px, 1px) rotate(-.4deg); } }
+
+.tk-chest-body {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 56%; z-index: 1; border-radius: 6px 6px 14px 14px; border: 3px solid #b8860b;
+  background:
+    repeating-linear-gradient(180deg, rgba(0, 0, 0, .22) 0 2px, transparent 2px 27px),
+    linear-gradient(180deg, #23423a, #12281f 58%, #0a1813);
+  box-shadow: inset 0 0 0 2px rgba(255, 210, 74, .22), inset 0 8px 18px rgba(0, 0, 0, .45), 0 22px 44px rgba(0, 0, 0, .65);
+}
+.tk-band { position: absolute; top: -3px; bottom: -3px; width: 13%; border-inline: 1px solid #5a3a00; background: linear-gradient(90deg, #8a5a00, #ffd24a 38%, #fff1a8 50%, #ffb300 70%, #8a5a00); }
+.tk-band-l { left: 10%; } .tk-band-r { right: 10%; }
+.tk-lock { position: absolute; left: 50%; top: -14%; width: 15%; aspect-ratio: 1 / 1.15; transform: translateX(-50%); z-index: 2; display: grid; place-items: center; border: 2px solid #6b4500; border-radius: 7px; background: linear-gradient(145deg, #fff1a8, #ffb300 55%, #8a5a00); box-shadow: 0 3px 8px rgba(0, 0, 0, .5); transition: transform .8s ease, opacity .8s ease; }
+.tk-lock b { width: 22%; height: 34%; border-radius: 50% 50% 2px 2px; background: #2a1a00; }
+.is-open .tk-lock { transform: translate(-50%, 40%) scale(.9); opacity: 0; }
+.tk-chest-inner { position: absolute; left: 4%; right: 4%; bottom: 48%; height: 18%; z-index: 0; border-radius: 50%; filter: blur(5px); opacity: 0; background: radial-gradient(ellipse, #fffbe0 0, var(--tk-gold) 42%, rgba(255, 180, 0, 0) 72%); transition: opacity 2s ease .5s; }
+.is-open .tk-chest-inner { opacity: 1; }
+
+.tk-lid { position: absolute; left: 0; right: 0; top: 0; height: 44%; z-index: 2; transform-origin: 50% 100%; transform-style: preserve-3d; transition: transform 2.4s cubic-bezier(.35, .05, .25, 1); }
+.is-open .tk-lid { transform: translateY(-3%) rotateX(-112deg); }
+.tk-lid-front, .tk-lid-back { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 50% 50% 6px 6px / 90% 90% 6px 6px; }
+.tk-lid-front {
+  overflow: hidden; border: 3px solid #b8860b;
+  background: repeating-linear-gradient(90deg, rgba(0, 0, 0, .2) 0 2px, transparent 2px 36px), linear-gradient(180deg, #2c5247, #1a362c 70%, #12281f);
+  box-shadow: inset 0 3px 10px rgba(255, 255, 255, .12), inset 0 0 0 2px rgba(255, 210, 74, .22);
+}
+.tk-lid-back { transform: rotateY(180deg); background: radial-gradient(ellipse at 50% 100%, #fff3b0, var(--tk-gold-2) 48%, #6b4500); border: 3px solid #8a5a00; }
+
+/* ── Moneta 3D ───────────────────────────────────────────── */
+.tk-coin-wrap {
+  --coin: clamp(124px, 36vw, 184px);
+  position: absolute; left: 50%; top: 50%; z-index: 3; width: var(--coin); height: var(--coin); margin: calc(var(--coin) / -2) 0 0 calc(var(--coin) / -2); perspective: 760px;
+  opacity: 0; transform: translateY(32%) scale(.15); transition: transform 1.9s cubic-bezier(.16, 1.15, .3, 1), opacity .5s ease;
+}
+.is-burst .tk-coin-wrap { opacity: 1; transform: translateY(-34%) scale(1); }
+.is-reveal .tk-coin-wrap { transform: translateY(-58%) scale(1.1); }
+.tk-coin-wrap::before { content: ''; position: absolute; inset: -42%; pointer-events: none; background: radial-gradient(circle, rgba(255, 214, 90, .55), transparent 62%); opacity: 0; transition: opacity 1.2s ease; }
+.is-burst .tk-coin-wrap::before { opacity: 1; }
+.tk-coin { position: absolute; inset: 0; transform-style: preserve-3d; transform: rotateX(10deg); }
+.tk-coin.is-spinning { animation: tk-spin 4.8s linear infinite; }
+@keyframes tk-spin { from { transform: rotateX(10deg) rotateY(0deg); } to { transform: rotateX(10deg) rotateY(360deg); } }
+.tk-coin-edge { position: absolute; inset: 0; border-radius: 50%; transform: translateZ(var(--z)); background: linear-gradient(135deg, #8a5a00, var(--tk-gold) 42%, #a86f00); }
+.tk-coin-face {
+  position: absolute; inset: 0; display: grid; place-items: center; border-radius: 50%; overflow: hidden; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  background: radial-gradient(circle at 32% 28%, #fff6c8 0, var(--tk-gold) 32%, #f0a800 62%, #a86f00 100%);
+  box-shadow: inset 0 0 0 3px #b07800, inset 0 0 22px rgba(255, 255, 255, .35);
+}
+.tk-coin-front { transform: translateZ(6.6px); }
+.tk-coin-back { transform: rotateY(180deg) translateZ(6.6px); }
+.tk-coin-ring { position: absolute; inset: 9%; border-radius: 50%; border: 2px solid rgba(110, 70, 0, .55); box-shadow: inset 0 0 0 3px rgba(255, 245, 190, .35); }
+.tk-coin-mark { font-family: var(--font-display); font-size: calc(var(--coin) * .46); line-height: 1; color: #6b4500; letter-spacing: .04em; margin-top: -8%; text-shadow: 0 1px 0 #fff3b0, 0 -1px 0 rgba(90, 55, 0, .35); }
+.tk-coin-word { position: absolute; bottom: 17%; font-weight: 800; font-size: calc(var(--coin) * .085); letter-spacing: .34em; padding-left: .34em; color: #6b4500; }
+.tk-coin-logo { width: 30%; height: 30%; margin-top: -8%; border-radius: 22%; transform: rotate(12deg); background: var(--accent, #ffe600); box-shadow: 0 0 0 5px rgba(107, 69, 0, .4), 0 3px 8px rgba(0, 0, 0, .35); }
+.tk-coin-shine { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; background: linear-gradient(115deg, transparent 36%, rgba(255, 255, 255, .8) 50%, transparent 64%); background-size: 260% 100%; background-position: 160% 0; animation: tk-shine 2.8s ease-in-out infinite; }
+@keyframes tk-shine { 55%, 100% { background-position: -60% 0; } }
+
+/* ── Esplosione ──────────────────────────────────────────── */
+.tk-flash { position: absolute; inset: 0; z-index: 6; pointer-events: none; opacity: 0; background: radial-gradient(circle at 50% 44%, #fff 0%, #ffe9a0 30%, rgba(255, 200, 60, 0) 72%); }
+.is-burst .tk-flash { animation: tk-flash 1.5s ease-out; }
+@keyframes tk-flash { 0% { opacity: 0; } 7% { opacity: 1; } 100% { opacity: 0; } }
+.tk-ring { position: absolute; left: 50%; top: 44%; z-index: 5; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%; pointer-events: none; opacity: 0; border: 3px solid rgba(255, 224, 130, .95); box-shadow: 0 0 44px rgba(255, 190, 40, .85), inset 0 0 30px rgba(255, 190, 40, .6); }
+.is-burst .tk-ring { animation: tk-ring 1.6s cubic-bezier(.1, .7, .3, 1); }
+@keyframes tk-ring { 0% { transform: scale(.2); opacity: 1; } 100% { transform: scale(15); opacity: 0; } }
+.is-burst:not(.is-reveal) .tk-stage { animation: tk-shake .55s linear; }
+@keyframes tk-shake { 20% { transform: translate(-6px, 3px); } 40% { transform: translate(5px, -4px); } 60% { transform: translate(-3px, 2px); } 80% { transform: translate(2px, -1px); } }
+
+/* ── Titolo e azioni ─────────────────────────────────────── */
+.tk-result { position: relative; z-index: 6; margin-top: 4px; text-align: center; opacity: 0; transform: translateY(14px); pointer-events: none; transition: opacity .9s ease .3s, transform .9s ease .3s; }
+.is-reveal .tk-result { opacity: 1; transform: none; pointer-events: auto; }
+.tk-title { display: grid; gap: 2px; font-size: clamp(2.3rem, 10.5vw, 4.8rem); line-height: .95; letter-spacing: .05em; }
+.tk-title span { display: block; background: linear-gradient(180deg, #fffbe0 0%, var(--tk-gold) 46%, #ff9d00 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 18px rgba(255, 190, 40, .55)); }
+.tk-title span:last-child { font-size: 1.12em; }
+.is-reveal .tk-title span { animation: tk-title-in 1.1s cubic-bezier(.2, .8, .2, 1) both; }
+.is-reveal .tk-title span:last-child { animation-delay: .25s; }
+@keyframes tk-title-in { from { opacity: 0; letter-spacing: .4em; filter: blur(10px) drop-shadow(0 0 0 transparent); } }
+.tk-sub { margin: 10px auto 0; max-width: 34ch; font-size: .98rem; color: #e9dfb8; }
+.tk-actions { display: grid; justify-items: center; gap: 6px; margin-top: 18px; animation: tk-rise .7s ease both; }
+@keyframes tk-rise { from { opacity: 0; transform: translateY(10px); } }
+.tk-btn { font: inherit; cursor: pointer; border: 0; }
+.tk-btn-main { min-height: 50px; padding: 0 30px; border-radius: 999px; font-weight: 800; font-size: 1.05rem; color: #3a2500; background: linear-gradient(180deg, #fff1a8, #ffc928 55%, #f0a000); box-shadow: inset 0 0 0 1px #fff3b0, 0 10px 30px rgba(255, 180, 0, .45); transition: transform .15s ease, filter .15s ease; }
+.tk-btn-main:hover { transform: translateY(-1px); filter: brightness(1.07); }
+.tk-btn-ghost { min-height: 40px; padding: 0 16px; background: none; color: #e9dfb8; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.tk-skip { position: absolute; z-index: 8; top: calc(14px + env(safe-area-inset-top)); right: 14px; min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255, 236, 170, .35); background: rgba(0, 0, 0, .35); color: #f4e9c0; font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer; }
+.tk-mute { position: absolute; z-index: 8; left: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); width: 42px; height: 42px; border-radius: 50%; border: 1px solid rgba(255, 236, 170, .35); background: rgba(0, 0, 0, .35); font-size: 1.1rem; cursor: pointer; }
+.tk-tap { position: absolute; z-index: 8; left: 0; right: 0; bottom: calc(22px + env(safe-area-inset-bottom)); margin: 0; text-align: center; font-size: .8rem; color: #f4e9c0; opacity: .85; pointer-events: none; animation: tk-blink 1.8s ease-in-out infinite; }
+@keyframes tk-blink { 50% { opacity: .3; } }
+
+@media (max-height: 560px) { .tk-stage { height: 42dvh; } .tk-sub { display: none; } }
+
+/* ── Chip (Token da riscattare) ──────────────────────────── */
+.tk-chip { position: fixed; z-index: 35; top: calc(var(--top-h) + 10px); left: 50%; transform: translateX(-50%); max-width: calc(100vw - 24px); display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; cursor: pointer; font: inherit; font-weight: 800; font-size: .88rem; color: #3a2500; white-space: nowrap; background: linear-gradient(180deg, #fff1a8, #ffc928 55%, #f0a000); box-shadow: inset 0 0 0 1px #fff3b0, 0 6px 22px rgba(255, 180, 0, .5); animation: tk-chip-in .6s cubic-bezier(.2, .8, .2, 1), tk-glow 2.6s ease-in-out .6s infinite; }
+@keyframes tk-chip-in { from { opacity: 0; transform: translate(-50%, -12px); } }
+@keyframes tk-glow { 50% { box-shadow: inset 0 0 0 1px #fff3b0, 0 6px 34px rgba(255, 190, 40, .85); } }
+
+/* ── Scelta del premio, profilo, admin ───────────────────── */
+.tk-gold-card { border: 1px solid #b8860b; border-radius: var(--r); padding: 16px; background: linear-gradient(135deg, color-mix(in srgb, #ffc928 15%, var(--surface)), var(--surface) 70%); }
+.tk-gold-card h3 { color: var(--tk-gold); }
+:root[data-theme='light'] .tk-gold-card h3 { color: #8a5a00; }
+.tk-group + .tk-group { margin-top: 14px; }
+.tk-group h4 { margin: 0 0 6px; font-size: .78rem; font-weight: 800; letter-spacing: .06em; color: var(--muted); text-transform: uppercase; }
+.tk-opt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
+.tk-opt { display: flex; flex-direction: column; gap: 2px; min-height: 64px; padding: 10px 12px; text-align: left; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface-2); cursor: pointer; font: inherit; }
+.tk-opt b { font-size: .92rem; }
+.tk-opt span { font-size: .72rem; color: var(--muted); line-height: 1.25; }
+.tk-opt:hover { border-color: #b8860b; }
+.tk-opt[aria-pressed='true'] { border-color: #ffc928; background: color-mix(in srgb, #ffc928 16%, var(--surface-2)); box-shadow: 0 0 0 2px rgba(255, 201, 40, .4); }
+.tk-done { text-align: center; padding: 8px 0 4px; }
+.tk-done .tk-done-emoji { font-size: 4rem; line-height: 1.1; animation: tk-pop .7s cubic-bezier(.2, 1.4, .4, 1); }
+@keyframes tk-pop { from { transform: scale(.3) rotate(-20deg); opacity: 0; } }
+.tk-stat { text-align: center; }
+.tk-stat .score { text-align: center; }
