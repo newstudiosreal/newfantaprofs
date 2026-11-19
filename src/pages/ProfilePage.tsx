@@ -11,6 +11,7 @@ import {
 import { SecuritySection } from '@/components/SecuritySection';
 import { FollowButton, FollowCounts } from '@/components/FollowButton';
 import { PushToggle } from '@/components/PushToggle';
+import { TokenSection } from '@/components/token/TokenSection';
 import { explain } from '@/lib/errors';
 import { fmtDate } from '@/lib/format';
 import { badgeLabel, NAME_FX, SKINS } from '@/lib/premium';
@@ -119,6 +120,8 @@ function OwnProfile({ profile }: { profile: Profile }) {
           }}>Riscatta</ActionButton></div>
         <p className="hint">Skin disponibili: {SKINS.slice(1).map(s => s.name).join(', ')} · Effetti: {NAME_FX.map(f => f.name).join(', ')}</p>
       </div>
+
+      <TokenSection profile={profile} />
 
       <div className="section-title"><h2>Notifiche</h2></div>
       <PushToggle />
