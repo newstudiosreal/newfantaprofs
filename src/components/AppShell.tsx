@@ -9,6 +9,7 @@ import { listNotifications, markAllNotificationsRead, markNotificationRead, touc
 import { timeAgo } from '@/lib/format';
 import { Avatar, Button, Modal } from './ui';
 import { InstallPrompt } from './InstallPrompt';
+import { TokenHost } from './token/TokenHost';
 import { IconBell, IconBook, IconHome, IconMoon, IconNews, IconShield, IconSun, IconUser, IconUsers } from './icons';
 
 const NAV = [
@@ -101,6 +102,7 @@ export function AppShell() {
 
       <div id="contenuto" tabIndex={-1} style={{ outline: 'none' }}><Outlet /></div>
       <InstallPrompt />
+      {session && profile && <TokenHost />}
 
       {session && (
         <nav className="bottomnav" aria-label="Principale mobile">
