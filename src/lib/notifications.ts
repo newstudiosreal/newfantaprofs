@@ -42,6 +42,12 @@ const DEFS: Record<string, (p: P) => NotificationView> = {
   proposal_new: p => ({ label: `📝 Nuova proposta${s(p.event) ? `: ${s(p.event)}` : ''}`, to: league(p, 'proposte') }),
   proposal_approved: p => ({ label: `✅ Proposta approvata${s(p.event) ? `: ${s(p.event)}` : ''}`, to: league(p, 'proposte') }),
   proposal_rejected: p => ({ label: `🙅 Proposta rifiutata${s(p.event) ? `: ${s(p.event)}` : ''}`, to: league(p, 'proposte') }),
+  // ── FantaProf Token ──
+  token_found: () => ({ label: '🪙 Hai trovato un FantaProf Token!', to: '/profilo' }),
+  token_redeemed: () => ({ label: '🎁 Premio del Token riscattato', to: '/profilo' }),
+  token_badge_request: p => ({ label: `✍️ Richiesta badge${s(p.username) ? ` da @${s(p.username)}` : ''}${s(p.text) ? `: ${s(p.text)}` : ''}`, to: '/admin' }),
+  token_badge_approved: p => ({ label: `✅ Badge approvato${s(p.text) ? `: ${s(p.text)}` : ''}`, to: '/profilo' }),
+  token_badge_rejected: () => ({ label: '🙅 Badge rifiutato: il tuo Token è ancora tuo, scegli un altro premio', to: '/profilo' }),
 };
 
 export function describeNotification(n: Pick<AppNotification, 'type' | 'payload'>): NotificationView {
