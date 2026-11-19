@@ -29,3 +29,15 @@ describe('describeNotification (D)', () => {
     expect(describeNotification({ type: 'app_mode', payload: { mode: 'normal' } }).label).toMatch(/online/);
   });
 });
+
+describe('describeNotification (Token)', () => {
+  it('ritrovamento, riscatto e badge', () => {
+    expect(describeNotification({ type: 'token_found', payload: {} }).label).toMatch(/Token/);
+    expect(describeNotification({ type: 'token_found', payload: {} }).to).toBe('/profilo');
+    expect(describeNotification({ type: 'token_badge_approved', payload: { text: 'Re del 5B' } }).label).toContain('Re del 5B');
+    expect(describeNotification({ type: 'token_badge_rejected', payload: {} }).label).toMatch(/rifiutato/);
+    const req = describeNotification({ type: 'token_badge_request', payload: { username: 'bob', text: 'Boss' } });
+    expect(req.label).toContain('@bob');
+    expect(req.to).toBe('/admin');
+  });
+});
