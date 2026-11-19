@@ -10,12 +10,13 @@ import {
 } from '@/lib/api';
 import { fmtDate, fmtDateTime } from '@/lib/format';
 import { BannedWords, ClientErrors } from './SuperAdminExtras';
+import SuperAdminToken from './SuperAdminToken';
 import { BADGES, NAME_FX, SKINS } from '@/lib/premium';
 import type { Announcement, DirectMessage, League, Profile, Report, ReportReason, ReportStatus } from '@/lib/types';
 
-type Tab = 'utenti' | 'leghe' | 'codici' | 'news' | 'segnalazioni' | 'punti' | 'audit' | 'parole' | 'errori' | 'sistema';
+type Tab = 'utenti' | 'leghe' | 'codici' | 'token' | 'news' | 'segnalazioni' | 'punti' | 'audit' | 'parole' | 'errori' | 'sistema';
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'utenti', label: 'Utenti' }, { id: 'leghe', label: 'Leghe' }, { id: 'codici', label: 'Codici' }, { id: 'news', label: 'News' },
+  { id: 'utenti', label: 'Utenti' }, { id: 'leghe', label: 'Leghe' }, { id: 'codici', label: 'Codici' }, { id: 'token', label: 'Token' }, { id: 'news', label: 'News' },
   { id: 'segnalazioni', label: 'Segnalazioni' }, { id: 'punti', label: 'Punti & Prof' }, { id: 'audit', label: 'Audit log' }, { id: 'parole', label: 'Parole vietate' },
   { id: 'errori', label: 'Errori app' }, { id: 'sistema', label: 'Sistema' },
 ];
@@ -160,7 +161,7 @@ function Codes() {
       <div className="card">
         {codes.data?.map(c => (
           <div key={c.code} className="row between" style={{ padding: '6px 0', borderBottom: '1px solid var(--line)', opacity: c.used_by ? .5 : 1 }}>
-            <span><span className="code">{c.code}</span> <span className="muted small">{c.type}{c.meta?.ref ? ` · ${c.meta.ref}` : ''}</span></span>
+            <span><span className="code">{c.code}</span> <span className="muted small">{c.type}{c.meta?.ref ? ` · ${c.meta.ref}` : ''}{c.meta?.source === 'token' ? ' · 🪙 Token' : ''}</span></span>
             <span className="badge">{c.used_by ? 'usato' : 'libero'}</span>
           </div>
         ))}
@@ -396,7 +397,7 @@ export default function SuperAdmin() {
       <div className="row row-wrap" style={{ marginBottom: 14 }} role="tablist">
         {TABS.map(t => <Button key={t.id} size="sm" variant={tab === t.id ? 'primary' : 'default'} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}>{t.label}</Button>)}
       </div>
-      {tab === 'utenti' && <Users />}{tab === 'leghe' && <Leagues />}{tab === 'codici' && <Codes />}{tab === 'news' && <NewsAdmin />}
+      {tab === 'utenti' && <Users />}{tab === 'leghe' && <Leagues />}{tab === 'codici' && <Codes />}{tab === 'token' && <SuperAdminToken />}{tab === 'news' && <NewsAdmin />}
       {tab === 'segnalazioni' && <Reports />}{tab === 'punti' && <PointsAndProfessors />}{tab === 'audit' && <Audit />}{tab === 'parole' && <BannedWords />}{tab === 'errori' && <ClientErrors />}{tab === 'sistema' && <System />}
     </main>
   );
